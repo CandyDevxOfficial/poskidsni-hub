@@ -24,26 +24,167 @@ const htmlContent = `
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Encrypt X Obfuscator</title>
+    <title>Encrypt X - SOLARIS HUB</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Kanit:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; margin: 0; display: flex; justify-content: center; }
-        .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 24px; width: 100%; max-width: 480px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
-        h2 { text-align: center; color: #ff4a4a; font-size: 22px; margin-top: 0; font-weight: 700; letter-spacing: 1px; }
-        textarea { width: 100%; height: 180px; background: #0d1117; color: #7ee787; border: 1px solid #30363d; border-radius: 8px; padding: 12px; font-family: monospace; box-sizing: border-box; font-size: 13px; resize: vertical; }
-        button { width: 100%; padding: 14px; background: #ea4aaa; border: none; color: white; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 16px; font-size: 16px; transition: 0.2s; }
-        button:hover { background: #d03795; }
-        .copy-btn { background: #238636; margin-top: 8px; display: none; }
-        .copy-btn:hover { background: #2ea043; }
-        .result { margin-top: 16px; background: #0d1117; padding: 12px; border-radius: 8px; word-break: break-all; font-family: monospace; font-size: 12px; color: #58a6ff; border: 1px solid #30363d; display: none; }
+        * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
+        body { 
+            background: #090a0f; 
+            background-image: radial-gradient(circle at 50% -20%, #1e1b4b, #090a0f 80%);
+            color: #f3f4f6; 
+            padding: 20px 12px; 
+            margin: 0; 
+            min-height: 100vh;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+        .card { 
+            background: rgba(18, 20, 29, 0.75); 
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            border-radius: 20px; 
+            padding: 28px 20px; 
+            width: 100%; 
+            max-width: 480px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1); 
+        }
+        .header { text-align: center; margin-bottom: 24px; }
+        .logo-title {
+            font-size: 26px; 
+            font-weight: 700; 
+            letter-spacing: 1.5px;
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0 0 4px 0;
+            text-shadow: 0 0 20px rgba(255, 65, 108, 0.3);
+        }
+        .author-tag {
+            font-size: 13px;
+            color: #fbbf24;
+            font-weight: 500;
+            margin: 0 0 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .author-tag a {
+            color: #38bdf8;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+        .author-tag a:hover {
+            text-decoration: underline;
+            color: #7dd3fc;
+        }
+        .subtitle { font-size: 12px; color: #9ca3af; margin: 0; font-weight: 300; }
+        
+        .code-box { position: relative; margin-bottom: 18px; }
+        textarea { 
+            width: 100%; 
+            height: 180px; 
+            background: rgba(10, 12, 18, 0.9); 
+            color: #a7f3d0; 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 14px; 
+            padding: 16px; 
+            font-family: 'Fira Code', monospace; 
+            font-size: 13px; 
+            outline: none;
+            resize: vertical; 
+            transition: all 0.3s ease;
+        }
+        textarea:focus { 
+            border-color: #ff416c; 
+            box-shadow: 0 0 15px rgba(255, 65, 108, 0.25); 
+        }
+        
+        .btn { 
+            width: 100%; 
+            padding: 14px; 
+            border: none; 
+            color: white; 
+            font-weight: 600; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-size: 15px; 
+            transition: all 0.25s ease; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-obfuscate { 
+            background: linear-gradient(135deg, #ff416c, #ff4b2b); 
+            box-shadow: 0 6px 20px rgba(255, 65, 108, 0.35); 
+        }
+        .btn-obfuscate:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 25px rgba(255, 65, 108, 0.5); 
+        }
+        .btn-obfuscate:active { transform: translateY(0); }
+        
+        .result-card { 
+            margin-top: 20px; 
+            background: rgba(10, 12, 18, 0.9); 
+            padding: 16px; 
+            border-radius: 14px; 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            display: none; 
+            animation: fadeIn 0.4s ease-in-out forwards;
+        }
+        .result-title { font-size: 12px; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .result-text { 
+            word-break: break-all; 
+            font-family: 'Fira Code', monospace; 
+            font-size: 12px; 
+            color: #38bdf8; 
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px dashed rgba(56, 189, 248, 0.3);
+        }
+        
+        .btn-copy { 
+            background: linear-gradient(135deg, #10b981, #059669); 
+            margin-top: 12px; 
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.25);
+        }
+        .btn-copy:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4); 
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2>Encrypt X Obfuscator</h2>
-        <textarea id="luaCode" placeholder="วางโค้ด Lua ของคุณที่นี่..."></textarea>
-        <button onclick="generateScript()">Obfuscate</button>
-        <div class="result" id="output"></div>
-        <button class="copy-btn" id="copyBtn" onclick="copyResult()">คัดลอกลิงก์</button>
+        <div class="header">
+            <h1 class="logo-title">ENCRYPT X</h1>
+            <div class="author-tag">
+                <span>โดย ค่ายSOLARIS HUB</span> 
+                <span>•</span>
+                <a href="https://tiktok.com/@solaris_official1" target="_blank">🎵 TikTok Profile</a>
+            </div>
+            <p class="subtitle">Secure & Obfuscate Roblox Lua Scripts</p>
+        </div>
+        <div class="code-box">
+            <textarea id="luaCode" placeholder="-- วางสคริปต์ Lua ของคุณที่นี่..."></textarea>
+        </div>
+        <button class="btn btn-obfuscate" onclick="generateScript()">⚡ Encrypt Script</button>
+        
+        <div class="result-card" id="resultCard">
+            <div class="result-title">Generated Loadstring:</div>
+            <div class="result-text" id="output"></div>
+            <button class="btn btn-copy" id="copyBtn" onclick="copyResult()">📋 คัดลอกสคริปต์</button>
+        </div>
     </div>
 
     <script>
@@ -62,20 +203,20 @@ const htmlContent = `
             
             generatedUrl = 'loadstring(game:HttpGet("' + window.location.origin + '/Scripts?Id=' + data.id + '"))("' + data.id + '")';
             
+            const resultCard = document.getElementById('resultCard');
             const outDiv = document.getElementById('output');
             const copyBtn = document.getElementById('copyBtn');
             
             outDiv.innerText = generatedUrl;
-            outDiv.style.display = 'block';
-            copyBtn.style.display = 'block';
-            copyBtn.innerText = 'คัดลอกลิงก์';
+            resultCard.style.display = 'block';
+            copyBtn.innerText = '📋 คัดลอกสคริปต์';
         }
 
         function copyResult() {
             navigator.clipboard.writeText(generatedUrl).then(() => {
                 const copyBtn = document.getElementById('copyBtn');
-                copyBtn.innerText = 'คัดลอกเรียบร้อยแล้ว!';
-                setTimeout(() => { copyBtn.innerText = 'คัดลอกลิงก์'; }, 2000);
+                copyBtn.innerText = '✅ คัดลอกเรียบร้อยแล้ว!';
+                setTimeout(() => { copyBtn.innerText = '📋 คัดลอกสคริปต์'; }, 2000);
             });
         }
     </script>
@@ -116,4 +257,3 @@ app.get('/Scripts', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
-                               
