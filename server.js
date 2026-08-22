@@ -18,6 +18,30 @@ local _0x9e3d = loadstring(_0x1b4c(_0x8f2a))
 if _0x9e3d then _0x9e3d() end`;
 }
 
+// ฟังก์ชั่นตรวจสอบว่าเป็นโค้ด Lua หรือไม่
+function isValidLuaCode(code) {
+    const luaKeywords = [
+        'local', 'function', 'end', 'if', 'then', 'else', 'elseif', 
+        'while', 'do', 'for', 'in', 'repeat', 'until', 'return', 
+        'break', 'true', 'false', 'nil', 'and', 'or', 'not',
+        'print', 'game', 'workspace', 'script', 'Instance.new',
+        'math.', 'string.', 'table.', 'task.wait', 'task.spawn',
+        'pairs', 'ipairs', 'type', 'tostring', 'tonumber', 'pcall',
+        'HttpGet', 'HttpPost', 'GetObjects', 'require', 'loadstring'
+    ];
+    
+    // เช็คสัญลักษณ์พื้นฐานของโค้ด Lua เช่น =, (), {}, ==, ~=, --
+    const hasCodeSymbols = /[=()\{\}\[\]\:]/.test(code) || code.includes('--');
+    
+    // เช็คว่ามีคีย์เวิร์ดของ Lua อยู่ในข้อความหรือไม่
+    const hasLuaKeyword = luaKeywords.some(keyword => {
+        const regex = new RegExp('\\b' + keyword.replace('.', '\\.') + '\\b');
+        return regex.test(code);
+    });
+
+    return hasCodeSymbols || hasLuaKeyword;
+}
+
 const htmlContent = `
 <!DOCTYPE html>
 <html lang="th">
@@ -102,6 +126,18 @@ const htmlContent = `
             box-shadow: 0 0 15px rgba(255, 65, 108, 0.25); 
         }
         
+        .error-msg {
+            color: #f87171;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
+            text-align: center;
+        }
+
         .btn { 
             width: 100%; 
             padding: 14px; 
@@ -178,6 +214,9 @@ const htmlContent = `
         <div class="code-box">
             <textarea id="luaCode" placeholder="-- วางสคริปต์ Lua ของคุณที่นี่..."></textarea>
         </div>
+        
+        <div class="error-msg" id="errorMsg">⚠️ นี่ไม่ใช่โค้ดโปรดใส่โค้ด</div>
+
         <button class="btn btn-obfuscate" onclick="generateScript()">⚡ Encrypt Script</button>
         
         <div class="result-card" id="resultCard">
@@ -192,18 +231,34 @@ const htmlContent = `
 
         async function generateScript() {
             const code = document.getElementById('luaCode').value;
-            if(!code.trim()) return alert('กรุณาวางโค้ดก่อนครับ!');
+            const errorMsg = document.getElementById('errorMsg');
+            const resultCard = document.getElementById('resultCard');
+
+            errorMsg.style.display = 'none';
+            resultCard.style.display = 'none';
+
+            if(!code.trim()) {
+                errorMsg.innerText = '⚠️ กรุณาวางโค้ดก่อนครับ!';
+                errorMsg.style.display = 'block';
+                return;
+            }
 
             const res = await fetch('/api/save-script', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ code: code })
             });
+
             const data = await res.json();
+            
+            if(!res.ok || data.error) {
+                errorMsg.innerText = '⚠️ ' + (data.error || 'นี่ไม่ใช่โค้ดโปรดใส่โค้ด');
+                errorMsg.style.display = 'block';
+                return;
+            }
             
             generatedUrl = 'loadstring(game:HttpGet("' + window.location.origin + '/Scripts?Id=' + data.id + '"))("' + data.id + '")';
             
-            const resultCard = document.getElementById('resultCard');
             const outDiv = document.getElementById('output');
             const copyBtn = document.getElementById('copyBtn');
             
@@ -228,8 +283,13 @@ app.get('/', (req, res) => res.send(htmlContent));
 
 app.post('/api/save-script', (req, res) => {
     const rawCode = req.body.code || '';
-    const scriptId = Math.floor(1000000000000 + Math.random() * 9000000000000).toString();
     
+    // ตรวจสอบความถูกต้องของโค้ด
+    if (!isValidLuaCode(rawCode)) {
+        return res.status(400).json({ error: 'นี่ไม่ใช่โค้ดโปรดใส่โค้ด' });
+    }
+
+    const scriptId = Math.floor(1000000000000 + Math.random() * 9000000000000).toString();
     const obfuscated = obfuscateLua(rawCode);
     
     fs.writeFileSync(path.join(DB_DIR, `${scriptId}.lua`), obfuscated);
@@ -256,4 +316,4 @@ app.get('/Scripts', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log('Server running on port ' + PORT));
+app.listen(PORT, () => console.log('Server running onคัดลอกเรียบร้อยแล้ว
