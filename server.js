@@ -6,7 +6,23 @@ const app = express();
 app.use(express.json());
 
 const DB_DIR = path.join(__dirname, 'scripts_db');
+const USERS_FILE = path.join(__dirname, 'users.json');
+
 if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR);
+if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, JSON.stringify([]));
+
+// ฟังก์ชั่นช่วยจัดการข้อมูลผู้ใช้
+function getUsers() {
+    try {
+        return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveUsers(users) {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+}
 
 function obfuscateLua(code) {
     const bytes = Buffer.from(code).toJSON().data;
@@ -40,7 +56,7 @@ const htmlContent = `
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOLARIS HUB - Script Obfuscator</title>
+    <title>SOLARIS HUB - Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Kanit:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
@@ -75,53 +91,29 @@ const htmlContent = `
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin: 0 0 4px 0;
-            text-shadow: 0 0 20px rgba(255, 65, 108, 0.3);
         }
-        .author-tag {
-            font-size: 13px;
-            color: #fbbf24;
-            font-weight: 500;
-            margin: 0 0 8px 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-        .author-tag a {
-            color: #38bdf8;
-            text-decoration: none;
-            transition: 0.2s;
-        }
-        .author-tag a:hover {
-            text-decoration: underline;
-            color: #7dd3fc;
-        }
-        .subtitle { font-size: 12px; color: #9ca3af; margin: 0; font-weight: 300; }
+        .subtitle { font-size: 12px; color: #9ca3af; margin: 0; }
         
-        .code-box { position: relative; margin-bottom: 18px; }
-        textarea { 
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 13px; color: #d1d5db; margin-bottom: 6px; }
+        input[type="email"], input[type="password"], textarea { 
             width: 100%; 
-            height: 180px; 
             background: rgba(10, 12, 18, 0.9); 
             color: #a7f3d0; 
             border: 1px solid rgba(255, 255, 255, 0.1); 
-            border-radius: 14px; 
-            padding: 16px; 
-            font-family: 'Fira Code', monospace; 
-            font-size: 13px; 
+            border-radius: 12px; 
+            padding: 12px 14px; 
+            font-size: 14px; 
             outline: none;
-            resize: vertical; 
             transition: all 0.3s ease;
         }
-        textarea:focus { 
+        textarea { height: 160px; font-family: 'Fira Code', monospace; font-size: 13px; resize: vertical; }
+        input:focus, textarea:focus { 
             border-color: #ff416c; 
             box-shadow: 0 0 15px rgba(255, 65, 108, 0.25); 
         }
         
-        .error-msg {
-            color: #f87171;
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.2);
+        .alert-box {
             padding: 10px 14px;
             border-radius: 10px;
             font-size: 13px;
@@ -129,6 +121,8 @@ const htmlContent = `
             display: none;
             text-align: center;
         }
+        .alert-error { color: #f87171; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); }
+        .alert-success { color: #34d399; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); }
 
         .btn { 
             width: 100%; 
@@ -140,31 +134,27 @@ const htmlContent = `
             cursor: pointer; 
             font-size: 15px; 
             transition: all 0.25s ease; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            margin-top: 8px;
         }
-        .btn-obfuscate { 
-            background: linear-gradient(135deg, #ff416c, #ff4b2b); 
-            box-shadow: 0 6px 20px rgba(255, 65, 108, 0.35); 
+        .btn-primary { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
+        .btn-success { background: linear-gradient(135deg, #10b981, #059669); }
+        .btn:hover { transform: translateY(-2px); }
+
+        .toggle-text {
+            text-align: center;
+            font-size: 13px;
+            color: #9ca3af;
+            margin-top: 16px;
         }
-        .btn-obfuscate:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 8px 25px rgba(255, 65, 108, 0.5); 
+        .toggle-text span {
+            color: #38bdf8;
+            cursor: pointer;
+            text-decoration: underline;
         }
-        .btn-obfuscate:active { transform: translateY(0); }
+
+        .page-section { display: none; }
+        .active-section { display: block; }
         
-        .result-card { 
-            margin-top: 20px; 
-            background: rgba(10, 12, 18, 0.9); 
-            padding: 16px; 
-            border-radius: 14px; 
-            border: 1px solid rgba(255, 255, 255, 0.08); 
-            display: none; 
-            animation: fadeIn 0.4s ease-in-out forwards;
-        }
-        .result-title { font-size: 12px; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
         .result-text { 
             word-break: break-all; 
             font-family: 'Fira Code', monospace; 
@@ -174,21 +164,7 @@ const htmlContent = `
             padding: 10px;
             border-radius: 8px;
             border: 1px dashed rgba(56, 189, 248, 0.3);
-        }
-        
-        .btn-copy { 
-            background: linear-gradient(135deg, #10b981, #059669); 
-            margin-top: 12px; 
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.25);
-        }
-        .btn-copy:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4); 
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -196,67 +172,150 @@ const htmlContent = `
     <div class="card">
         <div class="header">
             <h1 class="logo-title">SOLARIS HUB</h1>
-            <div class="author-tag">
-                <span>โดย ค่าย SOLARIS HUB</span> 
-                <span>•</span>
-                <a href="https://tiktok.com/@solaris_official1" target="_blank">🎵 TikTok Profile</a>
-            </div>
-            <p class="subtitle">Secure & Obfuscate Roblox Lua Scripts</p>
+            <p class="subtitle">ระบบจัดการสคริปต์ความปลอดภัยสูง</p>
         </div>
-        <div class="code-box">
-            <textarea id="luaCode" placeholder="-- วางสคริปต์ Lua ของคุณที่นี่..."></textarea>
-        </div>
-        
-        <div class="error-msg" id="errorMsg">⚠️ นี่ไม่ใช่โค้ดโปรดใส่โค้ด</div>
 
-        <button class="btn btn-obfuscate" onclick="generateScript()">⚡ Encrypt Script</button>
-        
-        <div class="result-card" id="resultCard">
-            <div class="result-title">Generated Loadstring:</div>
-            <div class="result-text" id="output"></div>
-            <button class="btn btn-copy" id="copyBtn" onclick="copyResult()">📋 คัดลอกสคริปต์</button>
+        <!-- หน้าที่ 1: เข้าสู่ระบบ / สลับไปสมัครสมาชิก -->
+        <div id="authSection" class="page-section active-section">
+            <h2 id="authTitle" style="font-size: 18px; margin-bottom: 16px; text-align: center;">เข้าสู่ระบบ</h2>
+            
+            <div id="authAlert" class="alert-box alert-error"></div>
+
+            <div class="form-group">
+                <label>อีเมล (E-mail)</label>
+                <input type="email" id="authEmail" placeholder="example@email.com">
+            </div>
+            <div class="form-group">
+                <label>รหัสผ่าน (Password)</label>
+                <input type="password" id="authPassword" placeholder="••••••••">
+            </div>
+
+            <button class="btn btn-primary" id="authBtn" onclick="handleAuth()">เข้าสู่ระบบ</button>
+
+            <div class="toggle-text">
+                <span id="toggleAuth" onclick="toggleAuthMode()">ยังไม่มีบัญชี? สมัครสมาชิกที่นี่</span>
+            </div>
+        </div>
+
+        <!-- หน้าที่ 2: ระบบจัดการสคริปต์ (เปิดให้เห็นเมื่อล็อกอินผ่านแล้ว) -->
+        <div id="dashboardSection" class="page-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <span id="userBadge" style="font-size: 12px; color: #fbbf24;"></span>
+                <span onclick="logout()" style="font-size: 12px; color: #f87171; cursor: pointer;">ออกจากระบบ</span>
+            </div>
+
+            <div class="form-group">
+                <label>วางโค้ด Lua ของคุณ</label>
+                <textarea id="luaCode" placeholder="-- วางสคริปต์ Lua ของคุณที่นี่..."></textarea>
+            </div>
+
+            <div id="dashAlert" class="alert-box alert-error"></div>
+
+            <button class="btn btn-primary" onclick="generateScript()">⚡ Encrypt Script</button>
+
+            <div id="resultCard" style="display: none; margin-top: 20px;">
+                <label style="font-size: 12px; color: #9ca3af;">Generated Loadstring:</label>
+                <div class="result-text" id="output"></div>
+                <button class="btn btn-success" id="copyBtn" onclick="copyResult()">📋 คัดลอกสคริปต์</button>
+            </div>
         </div>
     </div>
 
     <script>
+        let isLoginMode = true;
+        let currentUser = null;
         let generatedUrl = "";
+
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('authTitle').innerText = isLoginMode ? 'เข้าสู่ระบบ' : 'สมัครสมาชิก';
+            document.getElementById('authBtn').innerText = isLoginMode ? 'เข้าสู่ระบบ' : 'สมัครสมาชิก';
+            document.getElementById('toggleAuth').innerText = isLoginMode ? 'ยังไม่มีบัญชี? สมัครสมาชิกที่นี่' : 'มีบัญชีอยู่แล้ว? เข้าสู่ระบบ';
+            document.getElementById('authAlert').style.display = 'none';
+        }
+
+        async function handleAuth() {
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value.trim();
+            const alertBox = document.getElementById('authAlert');
+
+            alertBox.style.display = 'none';
+
+            if(!email || !password) {
+                alertBox.className = 'alert-box alert-error';
+                alertBox.innerText = '⚠️ กรุณากรอกอีเมลและรหัสผ่านให้ครบถ้วน';
+                alertBox.style.display = 'block';
+                return;
+            }
+
+            const endpoint = isLoginMode ? '/api/login' : '/api/register';
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                alertBox.className = 'alert-box alert-error';
+                alertBox.innerText = '⚠️ ' + data.error;
+                alertBox.style.display = 'block';
+            } else {
+                if (!isLoginMode) {
+                    alertBox.className = 'alert-box alert-success';
+                    alertBox.innerText = '✅ สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ';
+                    alertBox.style.display = 'block';
+                    toggleAuthMode();
+                } else {
+                    currentUser = data.email;
+                    document.getElementById('userBadge').innerText = '👤 ' + currentUser;
+                    document.getElementById('authSection').classList.remove('active-section');
+                    document.getElementById('dashboardSection').classList.add('active-section');
+                }
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('dashboardSection').classList.remove('active-section');
+            document.getElementById('authSection').classList.add('active-section');
+            document.getElementById('authEmail').value = '';
+            document.getElementById('authPassword').value = '';
+        }
 
         async function generateScript() {
             const code = document.getElementById('luaCode').value;
-            const errorMsg = document.getElementById('errorMsg');
+            const alertBox = document.getElementById('dashAlert');
             const resultCard = document.getElementById('resultCard');
 
-            errorMsg.style.display = 'none';
+            alertBox.style.display = 'none';
             resultCard.style.display = 'none';
 
             if(!code.trim()) {
-                errorMsg.innerText = '⚠️ กรุณาวางโค้ดก่อนครับ!';
-                errorMsg.style.display = 'block';
+                alertBox.innerText = '⚠️ กรุณาวางโค้ดก่อนครับ!';
+                alertBox.style.display = 'block';
                 return;
             }
 
             const res = await fetch('/api/save-script', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: code })
+                body: JSON.stringify({ code: code, email: currentUser })
             });
 
             const data = await res.json();
             
             if(!res.ok || data.error) {
-                errorMsg.innerText = '⚠️ ' + (data.error || 'นี่ไม่ใช่โค้ดโปรดใส่โค้ด');
-                errorMsg.style.display = 'block';
+                alertBox.innerText = '⚠️ ' + (data.error || 'เกิดข้อผิดพลาดในการประมวลผล');
+                alertBox.style.display = 'block';
                 return;
             }
             
             generatedUrl = 'loadstring(game:HttpGet("' + window.location.origin + '/Scripts?Id=' + data.id + '"))("' + data.id + '")';
             
-            const outDiv = document.getElementById('output');
-            const copyBtn = document.getElementById('copyBtn');
-            
-            outDiv.innerText = generatedUrl;
+            document.getElementById('output').innerText = generatedUrl;
             resultCard.style.display = 'block';
-            copyBtn.innerText = '📋 คัดลอกสคริปต์';
         }
 
         function copyResult() {
@@ -273,6 +332,38 @@ const htmlContent = `
 
 app.get('/', (req, res) => res.send(htmlContent));
 
+// ระบบสมัครสมาชิก
+app.post('/api/register', (req, res) => {
+    const { email, password } = req.body;
+    const users = getUsers();
+
+    if (users.find(u => u.email === email)) {
+        return res.status(400).json({ error: 'อีเมลนี้ถูกใช้งานไปแล้ว' });
+    }
+
+    users.push({ email, password });
+    saveUsers(users);
+    res.json({ success: true });
+});
+
+// ระบบเข้าสู่ระบบ
+app.post('/api/login', (req, res) => {
+    const { email, password } = req.body;
+    const users = getUsers();
+    const user = users.find(u => u.email === email);
+
+    if (!user) {
+        return res.status(400).json({ error: 'ไม่พบอีเมลนี้ในระบบ' });
+    }
+
+    if (user.password !== password) {
+        return res.status(400).json({ error: 'รหัสผ่านไม่ถูกต้อง' });
+    }
+
+    res.json({ success: true, email: user.email });
+});
+
+// ระบบบันทึกสคริปต์
 app.post('/api/save-script', (req, res) => {
     const rawCode = req.body.code || '';
     
@@ -287,6 +378,7 @@ app.post('/api/save-script', (req, res) => {
     res.json({ id: scriptId });
 });
 
+// ระบบดึงสคริปต์ไปรันในเกม
 app.get('/Scripts', (req, res) => {
     const scriptId = req.query.Id;
     const userAgent = req.headers['user-agent'] || '';
@@ -308,4 +400,3 @@ app.get('/Scripts', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
-        
