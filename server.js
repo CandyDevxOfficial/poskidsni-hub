@@ -5,8 +5,26 @@ const app = express();
 
 app.use(express.json());
 
-const DB_DIR = path.join(__dirname, 'scripts_db');
-if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR);
+// เลือกใช้ที่เก็บข้อมูลถาวรบน Render (ถ้ามี /data) หรือโฟลเดอร์ท้องถิ่น
+const DATA_DIR = fs.existsSync('/data') ? '/data' : path.join(__dirname, 'data_store');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+const DB_FILE = path.join(DATA_DIR, 'db.json');
+
+// โหลดข้อมูลเก่าขึ้นมาถ้ามีไฟล์อยู่
+let database = {};
+if (fs.existsSync(DB_FILE)) {
+    try {
+        database = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+    } catch (e) {
+        database = {};
+    }
+}
+
+// ฟังก์ชันบันทึกข้อมูลลงดิสก์
+function saveData() {
+    fs.writeFileSync(DB_FILE, JSON.stringify(database, null, 2));
+}
 
 function obfuscateLua(code) {
     const bytes = Buffer.from(code).toJSON().data;
@@ -330,8 +348,13 @@ app.post('/api/save-script', (req, res) => {
     const scriptId = Math.floor(1000000000000 + Math.random() * 9000000000000).toString();
     const obfuscated = obfuscateLua(code);
     
-    fs.writeFileSync(path.join(DB_DIR, `${scriptId}.lua`), obfuscated);
-    fs.writeFileSync(path.join(DB_DIR, `${scriptId}.json`), JSON.stringify({ password: password, rawCode: code }));
+    database[scriptId] = {
+        password: password,
+        rawCode: code,
+        obfuscated: obfuscated
+    };
+    
+    saveData();
 
     res.json({ id: scriptId });
 });
@@ -339,8 +362,7 @@ app.post('/api/save-script', (req, res) => {
 // ตรวจสอบ Script ID
 app.get('/api/check-script', (req, res) => {
     const id = req.query.id;
-    const filePath = path.join(DB_DIR, `${id}.lua`);
-    if (!id || !fs.existsSync(filePath)) {
+    if (!id || !database[id]) {
         return res.status(400).json({ error: 'รหัสสคริปต์ไม่ผ่าน' });
     }
     res.json({ success: true });
@@ -354,13 +376,11 @@ app.post('/api/get-code', (req, res) => {
         return res.status(400).json({ error: 'อีเมลไม่ผ่าน' });
     }
 
-    const infoPath = path.join(DB_DIR, `${scriptId}.json`);
-    if (!fs.existsSync(infoPath)) {
-        return res.status(400).json({ error: 'รหัสไม่ผ่าน' });
+    const scriptInfo = database[scriptId];
+    if (!scriptInfo) {
+        return res.status(400).json({ error: 'ไม่พบสคริปต์นี้' });
     }
 
-    const scriptInfo = JSON.parse(fs.readFileSync(infoPath, 'utf8'));
-    
     if (scriptInfo.password !== password) {
         return res.status(400).json({ error: 'รหัสไม่ผ่าน หรือ อีเมลไม่ผ่าน' });
     }
@@ -372,9 +392,9 @@ app.post('/api/get-code', (req, res) => {
 app.get('/Scripts', (req, res) => {
     const scriptId = req.query.Id;
     const userAgent = req.headers['user-agent'] || '';
-    const filePath = path.join(DB_DIR, `${scriptId}.lua`);
 
-    if (!scriptId || !fs.existsSync(filePath)) {
+    const scriptInfo = database[scriptId];
+    if (!scriptId || !scriptInfo) {
         return res.status(404).send('Script Not Found');
     }
 
@@ -422,11 +442,10 @@ app.get('/Scripts', (req, res) => {
         `);
     }
 
-    const scriptData = fs.readFileSync(filePath, 'utf8');
     res.type('text/plain');
-    res.send(scriptData);
+    res.send(scriptInfo.obfuscated);
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
-        
+                              
