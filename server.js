@@ -107,13 +107,13 @@ const htmlContent = `
 
         .btn { 
             width: 100%; 
-            padding: 14px; 
+            padding: 12px; 
             border: none; 
             color: white; 
             font-weight: 600; 
             border-radius: 12px; 
             cursor: pointer; 
-            font-size: 15px; 
+            font-size: 14px; 
             transition: all 0.25s ease; 
             margin-top: 8px;
         }
@@ -135,7 +135,7 @@ const htmlContent = `
         .result-box { 
             word-break: break-all; font-family: 'Fira Code', monospace; 
             font-size: 12px; color: #38bdf8; background: rgba(0, 0, 0, 0.3); 
-            padding: 10px; border-radius: 8px; border: 1px dashed rgba(56, 189, 248, 0.3); margin-top: 10px;
+            padding: 10px; border-radius: 8px; border: 1px dashed rgba(56, 189, 248, 0.3); margin-top: 6px;
         }
     </style>
 </head>
@@ -153,7 +153,7 @@ const htmlContent = `
 
         <div id="alertMsg" class="alert-box"></div>
 
-        <!-- โหมดที่ 1: สร้างและกำหนดรหัสผ่านสคริปต์ -->
+        <!-- โหมดที่ 1: แปลงสคริปต์ -->
         <div id="createTab" class="page-section active-section">
             <div class="form-group">
                 <label>📜 วางโค้ด Lua ของคุณ</label>
@@ -165,13 +165,14 @@ const htmlContent = `
             </div>
             <button class="btn btn-primary" onclick="createScript()">⚡ แปลงสคริปต์</button>
 
-            <div id="createResult" style="display: none; margin-top: 16px;">
+            <div id="createResult" style="display: none; margin-top: 14px;">
                 <label style="font-size: 12px; color: #9ca3af;">นำลิงก์นี้ไปรันใน Roblox:</label>
                 <div class="result-box" id="scriptLink"></div>
+                <button class="btn btn-success" id="copyLinkBtn" onclick="copyText('scriptLink', 'copyLinkBtn', '📋 คัดลอกลิงก์')">📋 คัดลอกลิงก์</button>
             </div>
         </div>
 
-        <!-- โหมดที่ 2: ปลดล็อกเพื่อดูโค้ด -->
+        <!-- โหมดที่ 2: ดูโค้ดสคริปต์ -->
         <div id="viewTab" class="page-section">
             <!-- หน้า 1: ใส่ Script ID -->
             <div id="viewStep1">
@@ -182,7 +183,7 @@ const htmlContent = `
                 <button class="btn btn-primary" onclick="checkScriptId()">ถัดไป ➔</button>
             </div>
 
-            <!-- หน้า 2: ใส่ E-mail และ รหัสผ่านที่เคยตั้งไว้ -->
+            <!-- หน้า 2: ใส่ E-mail และ รหัสผ่าน -->
             <div id="viewStep2" style="display: none;">
                 <div class="form-group">
                     <label>📧 อีเมลของคุณ (E-mail)</label>
@@ -201,8 +202,8 @@ const htmlContent = `
                     <label>📜 โค้ดสคริปต์ด้านใน:</label>
                     <textarea id="codeDisplay" readonly></textarea>
                 </div>
-                <button class="btn btn-success" id="copyCodeBtn" onclick="copyInsideCode()">📋 คัดลอกโค้ด</button>
-                <button class="btn btn-primary" style="margin-top: 8px;" onclick="location.reload()">🔄 กลับหน้าหลัก</button>
+                <button class="btn btn-success" id="copyCodeBtn" onclick="copyText('codeDisplay', 'copyCodeBtn', '📋 คัดลอกโค้ด')">📋 คัดลอกโค้ด</button>
+                <button class="btn btn-primary" style="margin-top: 6px;" onclick="location.reload()">🔄 กลับหน้าหลัก</button>
             </div>
         </div>
     </div>
@@ -299,12 +300,13 @@ const htmlContent = `
             }
         }
 
-        function copyInsideCode() {
-            const codeText = document.getElementById('codeDisplay').value;
-            navigator.clipboard.writeText(codeText).then(() => {
-                const btn = document.getElementById('copyCodeBtn');
+        function copyText(elementId, btnId, originalText) {
+            const target = document.getElementById(elementId);
+            const textToCopy = target.value || target.innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const btn = document.getElementById(btnId);
                 btn.innerText = '✅ คัดลอกเรียบร้อย!';
-                setTimeout(() => { btn.innerText = '📋 คัดลอกโค้ด'; }, 2000);
+                setTimeout(() => { btn.innerText = originalText; }, 2000);
             });
         }
     </script>
@@ -427,4 +429,4 @@ app.get('/Scripts', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
-                                                                           
+        
