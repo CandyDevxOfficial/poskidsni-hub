@@ -18,28 +18,20 @@ local _0x9e3d = loadstring(_0x1b4c(_0x8f2a))
 if _0x9e3d then _0x9e3d() end`;
 }
 
-// ฟังก์ชั่นตรวจสอบว่าเป็นโค้ด Lua หรือไม่
 function isValidLuaCode(code) {
+    const text = code.toLowerCase();
     const luaKeywords = [
         'local', 'function', 'end', 'if', 'then', 'else', 'elseif', 
         'while', 'do', 'for', 'in', 'repeat', 'until', 'return', 
-        'break', 'true', 'false', 'nil', 'and', 'or', 'not',
-        'print', 'game', 'workspace', 'script', 'Instance.new',
-        'math.', 'string.', 'table.', 'task.wait', 'task.spawn',
-        'pairs', 'ipairs', 'type', 'tostring', 'tonumber', 'pcall',
-        'HttpGet', 'HttpPost', 'GetObjects', 'require', 'loadstring'
+        'break', 'true', 'false', 'nil', 'print', 'game', 'workspace', 
+        'script', 'instance', 'math', 'string', 'table', 'task', 
+        'pairs', 'ipairs', 'httpget', 'loadstring', 'pcall'
     ];
     
-    // เช็คสัญลักษณ์พื้นฐานของโค้ด Lua เช่น =, (), {}, ==, ~=, --
-    const hasCodeSymbols = /[=()\{\}\[\]\:]/.test(code) || code.includes('--');
-    
-    // เช็คว่ามีคีย์เวิร์ดของ Lua อยู่ในข้อความหรือไม่
-    const hasLuaKeyword = luaKeywords.some(keyword => {
-        const regex = new RegExp('\\b' + keyword.replace('.', '\\.') + '\\b');
-        return regex.test(code);
-    });
+    const hasSymbols = /[=()\{\}\[\]\:]/.test(code) || code.includes('--');
+    const hasKeyword = luaKeywords.some(kw => text.includes(kw));
 
-    return hasCodeSymbols || hasLuaKeyword;
+    return hasSymbols || hasKeyword;
 }
 
 const htmlContent = `
@@ -48,7 +40,7 @@ const htmlContent = `
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Encrypt X - SOLARIS HUB</title>
+    <title>SOLARIS HUB - Script Obfuscator</title>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Kanit:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
@@ -203,9 +195,9 @@ const htmlContent = `
 <body>
     <div class="card">
         <div class="header">
-            <h1 class="logo-title">ENCRYPT X</h1>
+            <h1 class="logo-title">SOLARIS HUB</h1>
             <div class="author-tag">
-                <span>โดย ค่ายSOLARIS HUB</span> 
+                <span>โดย ค่าย SOLARIS HUB</span> 
                 <span>•</span>
                 <a href="https://tiktok.com/@solaris_official1" target="_blank">🎵 TikTok Profile</a>
             </div>
@@ -284,7 +276,6 @@ app.get('/', (req, res) => res.send(htmlContent));
 app.post('/api/save-script', (req, res) => {
     const rawCode = req.body.code || '';
     
-    // ตรวจสอบความถูกต้องของโค้ด
     if (!isValidLuaCode(rawCode)) {
         return res.status(400).json({ error: 'นี่ไม่ใช่โค้ดโปรดใส่โค้ด' });
     }
@@ -316,4 +307,5 @@ app.get('/Scripts', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log('Server running onคัดลอกเรียบร้อยแล้ว
+app.listen(PORT, () => console.log('Server running on port ' + PORT));
+        
