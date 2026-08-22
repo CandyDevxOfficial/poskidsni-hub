@@ -5,23 +5,19 @@ const app = express();
 
 app.use(express.json());
 
-// โฟลเดอร์สำหรับเซฟสคริปต์กันข้อมูลหาย
 const DB_DIR = path.join(__dirname, 'scripts_db');
 if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR);
 
-// ตัวแปลงโค้ด Lua ให้เป็น Obfuscated String แบบยุ่งเหยิง
 function obfuscateLua(code) {
     const bytes = Buffer.from(code).toJSON().data;
     const hexArray = bytes.map(b => '\\' + b).join('');
     
-    // สร้างโครงสร้างสคริปต์แบบครอบด้วย Function ซับซ้อน
     return `local _0x8f2a = "${hexArray}"
 local _0x1b4c = function(_0x) return _0x:gsub('\\\\(%d+)', function(_0xb) return string.char(tonumber(_0xb)) end) end
 local _0x9e3d = loadstring(_0x1b4c(_0x8f2a))
 if _0x9e3d then _0x9e3d() end`;
 }
 
-// หน้าเว็บหลัก
 const htmlContent = `
 <!DOCTYPE html>
 <html lang="th">
@@ -36,6 +32,8 @@ const htmlContent = `
         textarea { width: 100%; height: 180px; background: #0d1117; color: #7ee787; border: 1px solid #30363d; border-radius: 8px; padding: 12px; font-family: monospace; box-sizing: border-box; font-size: 13px; resize: vertical; }
         button { width: 100%; padding: 14px; background: #ea4aaa; border: none; color: white; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 16px; font-size: 16px; transition: 0.2s; }
         button:hover { background: #d03795; }
+        .copy-btn { background: #238636; margin-top: 8px; display: none; }
+        .copy-btn:hover { background: #2ea043; }
         .result { margin-top: 16px; background: #0d1117; padding: 12px; border-radius: 8px; word-break: break-all; font-family: monospace; font-size: 12px; color: #58a6ff; border: 1px solid #30363d; display: none; }
     </style>
 </head>
@@ -45,9 +43,12 @@ const htmlContent = `
         <textarea id="luaCode" placeholder="วางโค้ด Lua ของคุณที่นี่..."></textarea>
         <button onclick="generateScript()">Obfuscate</button>
         <div class="result" id="output"></div>
+        <button class="copy-btn" id="copyBtn" onclick="copyResult()">คัดลอกลิงก์</button>
     </div>
 
     <script>
+        let generatedUrl = "";
+
         async function generateScript() {
             const code = document.getElementById('luaCode').value;
             if(!code.trim()) return alert('กรุณาวางโค้ดก่อนครับ!');
@@ -59,10 +60,23 @@ const htmlContent = `
             });
             const data = await res.json();
             
-            const loadstringUrl = 'loadstring(game:HttpGet("' + window.location.origin + '/Scripts?Id=' + data.id + '"))("' + data.id + '")';
+            generatedUrl = 'loadstring(game:HttpGet("' + window.location.origin + '/Scripts?Id=' + data.id + '"))("' + data.id + '")';
+            
             const outDiv = document.getElementById('output');
-            outDiv.innerText = loadstringUrl;
+            const copyBtn = document.getElementById('copyBtn');
+            
+            outDiv.innerText = generatedUrl;
             outDiv.style.display = 'block';
+            copyBtn.style.display = 'block';
+            copyBtn.innerText = 'คัดลอกลิงก์';
+        }
+
+        function copyResult() {
+            navigator.clipboard.writeText(generatedUrl).then(() => {
+                const copyBtn = document.getElementById('copyBtn');
+                copyBtn.innerText = 'คัดลอกเรียบร้อยแล้ว!';
+                setTimeout(() => { copyBtn.innerText = 'คัดลอกลิงก์'; }, 2000);
+            });
         }
     </script>
 </body>
@@ -71,19 +85,16 @@ const htmlContent = `
 
 app.get('/', (req, res) => res.send(htmlContent));
 
-// บันทึกโค้ดแบบ Obfuscate ลงไฟล์
 app.post('/api/save-script', (req, res) => {
     const rawCode = req.body.code || '';
     const scriptId = Math.floor(1000000000000 + Math.random() * 9000000000000).toString();
     
     const obfuscated = obfuscateLua(rawCode);
     
-    // บันทึกลงดิสก์
     fs.writeFileSync(path.join(DB_DIR, `${scriptId}.lua`), obfuscated);
     res.json({ id: scriptId });
 });
 
-// ส่งโค้ดกลับเมื่อดึงจาก Roblox (พร้อมระบบบล็อก Browser)
 app.get('/Scripts', (req, res) => {
     const scriptId = req.query.Id;
     const userAgent = req.headers['user-agent'] || '';
@@ -93,7 +104,6 @@ app.get('/Scripts', (req, res) => {
         return res.status(404).send('Script Not Found');
     }
 
-    // บล็อกการเปิดจาก Web Browser
     const isBrowser = userAgent.includes('Mozilla') && !userAgent.includes('Roblox');
     if (isBrowser) {
         return res.status(403).send('ACCESS DENIED: This script is protected.');
@@ -106,3 +116,4 @@ app.get('/Scripts', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
+                               
