@@ -38,7 +38,7 @@ const htmlContent = `
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POSKIDSNI HUB - Script System</title>
+    <title>SOLARIS HUB - Script System</title>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Kanit:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
@@ -142,7 +142,7 @@ const htmlContent = `
 <body>
     <div class="card">
         <div class="header">
-            <h1 class="logo-title">POSKIDSNI HUB</h1>
+            <h1 class="logo-title">SOLARIS HUB</h1>
             <p class="subtitle">ระบบแปลงสคริปต์และปลดล็อกโค้ด</p>
         </div>
 
@@ -195,12 +195,14 @@ const htmlContent = `
                 <button class="btn btn-success" onclick="unlockCode()">ยืนยันเพื่อดูโค้ด 🔓</button>
             </div>
 
-            <!-- หน้า 3: แสดงโค้ดด้านใน -->
+            <!-- หน้า 3: แสดงโค้ดด้านใน + ปุ่มคัดลอก -->
             <div id="viewStep3" style="display: none;">
                 <div class="form-group">
                     <label>📜 โค้ดสคริปต์ด้านใน:</label>
                     <textarea id="codeDisplay" readonly></textarea>
                 </div>
+                <button class="btn btn-success" id="copyCodeBtn" onclick="copyInsideCode()">📋 คัดลอกโค้ด</button>
+                <button class="btn btn-primary" style="margin-top: 8px;" onclick="location.reload()">🔄 กลับหน้าหลัก</button>
             </div>
         </div>
     </div>
@@ -296,6 +298,15 @@ const htmlContent = `
                 document.getElementById('viewStep3').style.display = 'block';
             }
         }
+
+        function copyInsideCode() {
+            const codeText = document.getElementById('codeDisplay').value;
+            navigator.clipboard.writeText(codeText).then(() => {
+                const btn = document.getElementById('copyCodeBtn');
+                btn.innerText = '✅ คัดลอกเรียบร้อย!';
+                setTimeout(() => { btn.innerText = '📋 คัดลอกโค้ด'; }, 2000);
+            });
+        }
     </script>
 </body>
 </html>
@@ -317,7 +328,6 @@ app.post('/api/save-script', (req, res) => {
     const scriptId = Math.floor(1000000000000 + Math.random() * 9000000000000).toString();
     const obfuscated = obfuscateLua(code);
     
-    // บันทึกไฟล์โค้ด และ ไฟล์รหัสผ่าน
     fs.writeFileSync(path.join(DB_DIR, `${scriptId}.lua`), obfuscated);
     fs.writeFileSync(path.join(DB_DIR, `${scriptId}.json`), JSON.stringify({ password: password, rawCode: code }));
 
@@ -356,7 +366,7 @@ app.post('/api/get-code', (req, res) => {
     res.json({ success: true, code: scriptInfo.rawCode });
 });
 
-// ดึงสคริปต์ไปรันใน Roblox
+// ดึงสคริปต์ไปรันในเกม Roblox
 app.get('/Scripts', (req, res) => {
     const scriptId = req.query.Id;
     const userAgent = req.headers['user-agent'] || '';
@@ -374,7 +384,7 @@ app.get('/Scripts', (req, res) => {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Access Denied - POSKIDSNI HUB</title>
+            <title>Access Denied - SOLARIS HUB</title>
             <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
             <style>
                 * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
@@ -403,7 +413,7 @@ app.get('/Scripts', (req, res) => {
                 <div class="icon">🔒</div>
                 <h1>ACCESS DENIED</h1>
                 <p>สคริปต์นี้ถูกคุ้มครองความปลอดภัย<br>ไม่อนุญาตให้เปิดดูผ่านเว็บเบราว์เซอร์ครับ กรุณานำลิงก์ไปรันในเกม Roblox</p>
-                <a href="/" class="btn">กลับหน้าหลัก POSKIDSNI HUB</a>
+                <a href="/" class="btn">กลับหน้าหลัก SOLARIS HUB</a>
             </div>
         </body>
         </html>
@@ -417,4 +427,4 @@ app.get('/Scripts', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
-        
+                                                                           
