@@ -53,7 +53,7 @@ function sendDiscordStatus() {
             fields: [
                 { name: "🌐 Web Server", value: "`Operational` (Render)", inline: true },
                 { name: "⚡ Script Vault", value: "`Online`", inline: true },
-                { name: "🛡️ Security Logger", value: "`Active`", inline: true },
+                { name: "🛡️ Anti-Browser Security", value: "`Active` (403 Protection)", inline: true },
                 { name: "🔄 Last Started", value: `<t:${timeUnix}:R>`, inline: true }
             ],
             footer: { text: "SOLARIS HUB • Automated System Monitor" },
@@ -61,28 +61,6 @@ function sendDiscordStatus() {
         }]
     });
     postWebhook(DISCORD_STATUS_WEBHOOK, payload);
-}
-
-// Send Verification Log Webhook
-function sendVerificationLog(discordId) {
-    const timeUnix = Math.floor(Date.now() / 1000);
-    const payload = JSON.stringify({
-        username: "SOLARIS VERIFY LOG",
-        avatar_url: "https://i.imgur.com/8N4T8I3.png",
-        embeds: [{
-            title: "🎉 NEW USER VERIFIED / ROLE CLAIMED",
-            description: `User <@${discordId}> has successfully verified or requested access.`,
-            color: 65421,
-            fields: [
-                { name: "👤 User Mention", value: `<@${discordId}>`, inline: true },
-                { name: "🆔 Discord ID", value: `\`${discordId}\``, inline: true },
-                { name: "⏰ Verified At", value: `<t:${timeUnix}:F>`, inline: false }
-            ],
-            footer: { text: "SOLARIS HUB • Role Verification System" },
-            timestamp: new Date().toISOString()
-        }]
-    });
-    postWebhook(DISCORD_VERIFY_WEBHOOK, payload);
 }
 
 function postWebhook(webhookUrl, payload) {
@@ -102,7 +80,7 @@ function postWebhook(webhookUrl, payload) {
     }
 }
 
-// Main Page HTML
+// Main Page HTML (Clean Script Converter Only)
 const htmlContent = `
 <!DOCTYPE html>
 <html lang="en">
@@ -170,51 +148,75 @@ const htmlContent = `
             display: block;
         }
 
+        .editor-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .btn-mini-group { display: flex; gap: 6px; }
+        .btn-mini {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: #cbd5e1;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
         .editor-wrapper {
             background: rgba(10, 12, 20, 0.8);
             border: 1px solid var(--border-color);
             border-radius: 12px;
             padding: 12px;
         }
-        textarea, input[type="text"] {
+        textarea {
             width: 100%;
+            height: 180px;
             background: transparent;
             border: none;
             color: #cbd5e1;
             font-family: 'JetBrains Mono', monospace;
             font-size: 12.5px;
             outline: none;
+            resize: vertical;
+            line-height: 1.5;
         }
-        textarea { height: 160px; resize: vertical; line-height: 1.5; }
 
-        .input-box {
-            background: rgba(10, 12, 20, 0.8);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 12px;
+        .editor-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 14px;
         }
+        .char-counter { font-size: 12px; color: var(--text-sub); font-family: 'JetBrains Mono', monospace; }
 
         .btn-submit {
-            width: 100%;
             background: linear-gradient(135deg, #ff5722, #e64a19);
             color: #ffffff;
             border: none;
             border-radius: 12px;
-            padding: 12px;
+            padding: 11px 22px;
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             box-shadow: 0 4px 18px var(--accent-glow);
             transition: all 0.25s;
         }
-        .btn-submit:hover { transform: translateY(-2px); }
 
         .result-box {
             display: none;
             margin-top: 24px;
             padding-top: 20px;
             border-top: 1px dashed rgba(255, 255, 255, 0.12);
+        }
+
+        .status-badge {
+            color: var(--green-code);
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 14px;
         }
 
         .code-display {
@@ -226,6 +228,19 @@ const htmlContent = `
             font-family: 'JetBrains Mono', monospace;
             font-size: 11.5px;
             word-break: break-all;
+            margin-bottom: 12px;
+        }
+
+        .btn-copy-main {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 11px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 12.5px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -234,50 +249,57 @@ const htmlContent = `
 <div class="main-card">
     <div class="brand-header">
         <div class="brand-title">SOLARIS RUNNER</div>
-        <div class="brand-sub">Script Vault & Verification Portal</div>
+        <div class="brand-sub">Secure Executable Script Engine</div>
     </div>
 
-    <!-- Verification Section -->
-    <div class="form-group" style="border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 18px;">
-        <span class="label-title">MEMBER VERIFICATION (DISCORD ID)</span>
-        <div class="input-box">
-            <input type="text" id="discordIdInput" placeholder="Enter Discord ID (e.g. 123456789012345678)">
-        </div>
-        <button class="btn-submit" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);" onclick="submitVerify()">✅ Claim Role / Verify</button>
-    </div>
-
-    <!-- Script Converter Section -->
     <div class="form-group">
-        <span class="label-title">SCRIPT CONVERTER</span>
-        <div class="editor-wrapper">
-            <textarea id="rawCode" placeholder="-- Paste Lua script here..."></textarea>
+        <div class="editor-top">
+            <span class="label-title" style="margin:0;">CODE (LUA / TEXT)</span>
+            <div class="btn-mini-group">
+                <button class="btn-mini" onclick="document.getElementById('fileInput').click()">📁 Upload File</button>
+                <button class="btn-mini" onclick="document.getElementById('rawCode').value=''; updateCount();">🧹 Clear</button>
+            </div>
         </div>
-        <button class="btn-submit" style="margin-top: 12px;" onclick="createRaw()">⚡ Convert Script</button>
+
+        <input type="file" id="fileInput" accept=".lua,.txt" style="display:none;" onchange="handleFile(this)">
+
+        <div class="editor-wrapper">
+            <textarea id="rawCode" placeholder="-- Paste your Lua script here..." oninput="updateCount()"></textarea>
+        </div>
+
+        <div class="editor-bottom">
+            <span class="char-counter" id="charCount">0 characters</span>
+            <button class="btn-submit" onclick="createRaw()">⚡ Convert Script</button>
+        </div>
     </div>
 
     <div class="result-box" id="resultArea">
-        <span class="label-title">LOADSTRING</span>
-        <div class="code-display" id="loadstringBox"></div>
+        <div class="status-badge">✔ Raw ready — Browsers will receive 403</div>
+
+        <div class="form-group">
+            <span class="label-title">LOADSTRING (ROBLOX)</span>
+            <div class="code-display" id="loadstringBox"></div>
+        </div>
+
+        <button class="btn-copy-main" id="copyBtn" onclick="copyText()">📋 Copy Loadstring</button>
     </div>
 </div>
 
 <script>
-async function submitVerify() {
-    const discordId = document.getElementById('discordIdInput').value.trim();
-    if (!discordId) return alert('Please enter a valid Discord ID.');
+function updateCount() {
+    const len = document.getElementById('rawCode').value.length;
+    document.getElementById('charCount').innerText = len + ' characters';
+}
 
-    const res = await fetch('/api/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ discordId })
-    });
-
-    const data = await res.json();
-    if (res.ok) {
-        alert('Verification logged successfully!');
-        document.getElementById('discordIdInput').value = '';
-    } else {
-        alert(data.error);
+function handleFile(input) {
+    const file = input.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('rawCode').value = e.target.result;
+            updateCount();
+        };
+        reader.readAsText(file);
     }
 }
 
@@ -298,29 +320,51 @@ async function createRaw() {
         document.getElementById('resultArea').style.display = 'block';
     }
 }
+
+function copyText() {
+    const text = document.getElementById('loadstringBox').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.innerText = 'Copied!';
+        setTimeout(() => { btn.innerText = '📋 Copy Loadstring'; }, 2000);
+    });
+}
 </script>
 
 </body>
 </html>
 `;
 
+// 403 Page HTML
+const forbiddenPageHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 Forbidden - SOLARIS RUNNER</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        body { background: #0b0c10; color: #f1f5f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Kanit', sans-serif; text-align: center; }
+        .card { background: rgba(20, 22, 34, 0.9); border: 1px solid rgba(255,255,255,0.08); padding: 40px 28px; border-radius: 20px; max-width: 440px; }
+        .code { font-size: 72px; font-weight: 700; color: #ff5722; font-family: 'JetBrains Mono', monospace; }
+        .title { font-size: 20px; margin-bottom: 12px; }
+        .desc { font-size: 13px; color: #94a3b8; margin-bottom: 28px; }
+        .btn { background: #ff5722; color: #fff; padding: 12px 28px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 13px; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="code">403</div>
+    <div class="title">Access Denied</div>
+    <div class="desc">Direct web browser access is blocked to protect script integrity.</div>
+    <a href="/" class="btn">Return to Home</a>
+</div>
+</body>
+</html>
+`;
+
 app.get('/', (req, res) => res.send(htmlContent));
-
-// API Endpoint to Record Verification and Log to Webhook
-app.post('/api/verify', (req, res) => {
-    const { discordId } = req.body;
-    if (!discordId || !/^\d{17,20}$/.test(discordId)) {
-        return res.status(400).json({ error: 'Invalid Discord ID format' });
-    }
-
-    if (!database.users.includes(discordId)) {
-        database.users.push(discordId);
-        saveData();
-    }
-
-    sendVerificationLog(discordId);
-    res.json({ success: true, message: 'Logged to Discord' });
-});
 
 app.post('/api/save-script', (req, res) => {
     const { code } = req.body;
@@ -353,7 +397,7 @@ app.get('/raw/:id', (req, res) => {
                       (userAgent.includes('mozilla') && !userAgent.includes('roblox'));
 
     if (isBrowser) {
-        return res.status(403).send("403 Forbidden");
+        return res.status(403).send(forbiddenPageHtml);
     }
 
     res.type('text/plain; charset=utf-8');
@@ -365,4 +409,4 @@ app.listen(PORT, () => {
     console.log('SOLARIS RUNNER server active on port ' + PORT);
     sendDiscordStatus();
 });
-        
+    
