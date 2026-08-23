@@ -20,7 +20,7 @@ function saveData() {
     fs.writeFileSync(DB_FILE, JSON.stringify(database, null, 2));
 }
 
-// สุ่ม Secure ID ความยาว 22 ตัวอักษร
+// Generate Secure ID (22 chars)
 function generateSecureId(length = 22) {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     const bytes = crypto.randomBytes(length);
@@ -31,9 +31,10 @@ function generateSecureId(length = 22) {
     return result;
 }
 
+// Main Page HTML (All English)
 const htmlContent = `
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -162,7 +163,6 @@ const htmlContent = `
         }
         .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 22px var(--accent-glow); }
 
-        /* ผลลัพธ์โผล่ด้านล่าง */
         .result-box {
             display: none;
             margin-top: 24px;
@@ -258,29 +258,27 @@ const htmlContent = `
         <div class="brand-sub">Secure Executable Script Engine</div>
     </div>
 
-    <!-- ส่วนกรอกโค้ด -->
     <div class="form-group">
         <div class="editor-top">
             <span class="label-title" style="margin:0;">CODE (LUA / TEXT)</span>
             <div class="btn-mini-group">
-                <button class="btn-mini" onclick="document.getElementById('fileInput').click()">📁 อัปโหลดไฟล์</button>
-                <button class="btn-mini" onclick="clearCode()">🧹 ล้าง</button>
+                <button class="btn-mini" onclick="document.getElementById('fileInput').click()">📁 Upload File</button>
+                <button class="btn-mini" onclick="clearCode()">🧹 Clear</button>
             </div>
         </div>
 
         <input type="file" id="fileInput" accept=".lua,.txt" style="display:none;" onchange="handleFile(this)">
 
         <div class="editor-wrapper">
-            <textarea id="rawCode" placeholder="-- วางสคริปต์ Lua ของคุณที่นี่..." oninput="updateCount()"></textarea>
+            <textarea id="rawCode" placeholder="-- Paste your Lua script here..." oninput="updateCount()"></textarea>
         </div>
 
         <div class="editor-bottom">
             <span class="char-counter" id="charCount">0 characters</span>
-            <button class="btn-submit" onclick="createRaw()">⚡ แปลงสคริปต์</button>
+            <button class="btn-submit" onclick="createRaw()">⚡ Convert Script</button>
         </div>
     </div>
 
-    <!-- ส่วนแสดงผลลัพธ์ -->
     <div class="result-box" id="resultArea">
         <div class="status-badge">
             ✔ Raw ready — Browsers will receive 403
@@ -332,7 +330,7 @@ function handleFile(input) {
 
 async function createRaw() {
     const code = document.getElementById('rawCode').value.trim();
-    if (!code) return alert('กรุณาเลือกหรือวางโค้ด Lua ก่อนครับ');
+    if (!code) return alert('Please enter or paste your Lua script first.');
 
     const res = await fetch('/api/save-script', {
         method: 'POST',
@@ -370,6 +368,112 @@ function copyText(elementId, btn, isDiv = false) {
 </html>
 `;
 
+// Beautiful 403 Page HTML (All English + Home Button)
+const forbiddenPageHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 Forbidden - SOLARIS RUNNER</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(20, 22, 34, 0.9);
+            --accent-main: #ff5722;
+            --accent-glow: rgba(255, 87, 34, 0.35);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #f1f5f9;
+            --text-sub: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Kanit', sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 50% 30%, rgba(255, 87, 34, 0.12) 0%, transparent 60%);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .error-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 440px;
+            padding: 40px 28px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+        }
+
+        .status-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 72px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ff5722, #ff8a65);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+            margin-bottom: 12px;
+            letter-spacing: 2px;
+        }
+
+        .title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-main);
+        }
+
+        .description {
+            font-size: 13px;
+            color: var(--text-sub);
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        .btn-home {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff5722, #e64a19);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 4px 18px var(--accent-glow);
+            transition: all 0.25s;
+        }
+
+        .btn-home:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 22px var(--accent-glow);
+        }
+    </style>
+</head>
+<body>
+
+<div class="error-card">
+    <div class="status-code">403</div>
+    <div class="title">Access Denied</div>
+    <div class="description">
+        Direct web browser access to this raw script is blocked to protect execution integrity. Please use an executor or return to the main dashboard.
+    </div>
+    <a href="/" class="btn-home">Return to Home</a>
+</div>
+
+</body>
+</html>
+`;
+
 app.get('/', (req, res) => res.send(htmlContent));
 
 app.post('/api/save-script', (req, res) => {
@@ -387,7 +491,7 @@ app.post('/api/save-script', (req, res) => {
     res.json({ id });
 });
 
-// ดึงสคริปต์ไปรัน (บล็อก Web Browser)
+// Serve script with 403 block for web browsers
 app.get('/raw/:id', (req, res) => {
     const id = req.params.id;
     const script = database[id];
@@ -404,7 +508,7 @@ app.get('/raw/:id', (req, res) => {
                       (userAgent.includes('mozilla') && !userAgent.includes('roblox'));
 
     if (isBrowser) {
-        return res.status(403).send('403 Forbidden - Access denied for Web Browsers');
+        return res.status(403).send(forbiddenPageHtml);
     }
 
     res.type('text/plain; charset=utf-8');
