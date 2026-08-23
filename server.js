@@ -39,7 +39,24 @@ function generateSecureId(length = 22) {
     return result;
 }
 
-// Send Status Webhook
+function postWebhook(webhookUrl, payload) {
+    try {
+        const url = new URL(webhookUrl);
+        const req = https.request(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(payload)
+            }
+        });
+        req.on('error', (err) => console.error("Webhook error:", err));
+        req.write(payload);
+        req.end();
+    } catch (err) {
+        console.error("Failed to send webhook:", err);
+    }
+}
+
 function sendDiscordStatus() {
     const timeUnix = Math.floor(Date.now() / 1000);
     const payload = JSON.stringify({
@@ -60,23 +77,6 @@ function sendDiscordStatus() {
         }]
     });
     postWebhook(DISCORD_STATUS_WEBHOOK, payload);
-}
-
-function postWebhook(webhookUrl, payload) {
-    try {
-        const url = new URL(webhookUrl);
-        const req = https.request(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(payload)
-            }
-        });
-        req.write(payload);
-        req.end();
-    } catch (err) {
-        console.error("Failed to send webhook:", err);
-    }
 }
 
 // Main Page HTML
@@ -466,4 +466,4 @@ app.listen(PORT, () => {
     console.log('SOLARIS RUNNER server active on port ' + PORT);
     sendDiscordStatus();
 });
-    
+                
