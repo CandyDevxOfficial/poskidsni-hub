@@ -5,13 +5,11 @@ const app = express();
 
 app.use(express.json());
 
-// เลือกใช้ที่เก็บข้อมูลถาวรบน Render (ถ้ามี /data) หรือโฟลเดอร์ท้องถิ่น
 const DATA_DIR = fs.existsSync('/data') ? '/data' : path.join(__dirname, 'data_store');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
-// โหลดข้อมูลเก่าขึ้นมาถ้ามีไฟล์อยู่
 let database = {};
 if (fs.existsSync(DB_FILE)) {
     try {
@@ -21,33 +19,23 @@ if (fs.existsSync(DB_FILE)) {
     }
 }
 
-// ฟังก์ชันบันทึกข้อมูลลงดิสก์
 function saveData() {
     fs.writeFileSync(DB_FILE, JSON.stringify(database, null, 2));
 }
 
-function obfuscateLua(code) {
-    const bytes = Buffer.from(code).toJSON().data;
+// ฟังก์ชันแปลงโค้ดแบบเซฟ ปลอดภัย และรันติดแน่นอน
+function safeObfuscate(code, watermark = true) {
+    let result = code;
+    if (watermark) {
+        result = `-- [ SOLARIS HUB PROTECTED ]\n-- Generated at: ${new Date().toLocaleString()}\n\n` + result;
+    }
+    const bytes = Buffer.from(result).toJSON().data;
     const hexArray = bytes.map(b => '\\' + b).join('');
     
-    return `local _0x8f2a = "${hexArray}"
-local _0x1b4c = function(_0x) return _0x:gsub('\\\\(%d+)', function(_0xb) return string.char(tonumber(_0xb)) end) end
-local _0x9e3d = loadstring(_0x1b4c(_0x8f2a))
-if _0x9e3d then _0x9e3d() end`;
-}
-
-function isValidLuaCode(code) {
-    const text = code.toLowerCase();
-    const luaKeywords = [
-        'local', 'function', 'end', 'if', 'then', 'else', 'elseif', 
-        'while', 'do', 'for', 'in', 'repeat', 'until', 'return', 
-        'break', 'true', 'false', 'nil', 'print', 'game', 'workspace', 
-        'script', 'instance', 'math', 'string', 'table', 'task', 
-        'pairs', 'ipairs', 'httpget', 'loadstring', 'pcall'
-    ];
-    const hasSymbols = /[=()\{\}\[\]\:]/.test(code) || code.includes('--');
-    const hasKeyword = luaKeywords.some(kw => text.includes(kw));
-    return hasSymbols || hasKeyword;
+    return `local _S = "${hexArray}"
+local _D = function(s) return s:gsub('\\\\(%d+)', function(n) return string.char(tonumber(n)) end) end
+local _F = loadstring(_D(_S))
+if _F then _F() end`;
 }
 
 const htmlContent = `
@@ -56,178 +44,223 @@ const htmlContent = `
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOLARIS HUB - Script System</title>
+    <title>SOLARIS HUB - Luau Security & Script Manager</title>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Kanit:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
+        :root {
+            --primary: #ff416c;
+            --secondary: #8b5cf6;
+            --bg-dark: #0a0c14;
+            --card-bg: rgba(18, 20, 32, 0.9);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+        * { box-sizing: border-box; font-family: 'Kanit', sans-serif; margin: 0; padding: 0; }
         body { 
-            background: #090a0f; 
-            background-image: radial-gradient(circle at 50% -20%, #1e1b4b, #090a0f 80%);
+            background: var(--bg-dark); 
+            background-image: radial-gradient(circle at 50% -10%, #2e1065, var(--bg-dark) 80%);
             color: #f3f4f6; 
-            padding: 20px 12px; 
-            margin: 0; 
+            padding: 24px 12px; 
             min-height: 100vh;
             display: flex; 
             justify-content: center; 
             align-items: center; 
         }
-        .card { 
-            background: rgba(18, 20, 29, 0.85); 
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08); 
+        .container { 
+            background: var(--card-bg); 
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border); 
             border-radius: 20px; 
-            padding: 28px 20px; 
+            padding: 28px 24px; 
             width: 100%; 
-            max-width: 480px; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.7); 
+            max-width: 520px; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8); 
         }
         .header { text-align: center; margin-bottom: 20px; }
         .logo-title {
-            font-size: 26px; 
+            font-size: 28px; 
             font-weight: 700; 
-            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin: 0 0 4px 0;
+            letter-spacing: 1px;
         }
-        .subtitle { font-size: 12px; color: #9ca3af; margin: 0; }
-        
-        .form-group { margin-bottom: 14px; }
-        .form-group label { display: block; font-size: 13px; color: #d1d5db; margin-bottom: 6px; }
-        input[type="text"], input[type="password"], input[type="email"], textarea { 
-            width: 100%; 
-            background: rgba(10, 12, 18, 0.9); 
-            color: #a7f3d0; 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            border-radius: 12px; 
-            padding: 12px 14px; 
-            font-size: 14px; 
-            outline: none;
+        .subtitle { font-size: 13px; color: #9ca3af; }
+
+        .nav-tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            color: #9ca3af;
+            font-weight: 600;
+            font-size: 13px;
+            border-radius: 8px;
+            cursor: pointer;
             transition: all 0.3s ease;
         }
-        textarea { height: 160px; font-family: 'Fira Code', monospace; font-size: 12px; resize: vertical; }
-        input:focus, textarea:focus { 
-            border-color: #ff416c; 
-            box-shadow: 0 0 15px rgba(255, 65, 108, 0.25); 
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 4px 12px rgba(255, 65, 108, 0.3);
         }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; color: #d1d5db; margin-bottom: 8px; }
         
-        .alert-box {
-            padding: 10px 14px;
-            border-radius: 10px;
-            font-size: 13px;
+        textarea { 
+            width: 100%; 
+            background: rgba(10, 12, 20, 0.95); 
+            color: #a7f3d0; 
+            border: 1px solid var(--border); 
+            border-radius: 12px; 
+            padding: 14px; 
+            font-size: 12px; 
+            font-family: 'Fira Code', monospace;
+            outline: none;
+            height: 200px; 
+            resize: vertical; 
+            transition: border-color 0.3s;
+        }
+        textarea:focus { border-color: var(--primary); }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
             margin-bottom: 16px;
+            background: rgba(255,255,255,0.03);
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #d1d5db;
+        }
+
+        .btn-action-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .btn-mini {
+            padding: 6px 12px;
+            font-size: 11px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid var(--border);
+            color: #d1d5db;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .btn-mini:hover { background: rgba(255,255,255,0.15); }
+
+        .btn { 
+            width: 100%; 
+            padding: 14px; 
+            border: none; 
+            color: white; 
+            font-weight: 700; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            box-shadow: 0 4px 20px rgba(255, 65, 108, 0.25);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(255, 65, 108, 0.4); }
+
+        .result-box { 
+            word-break: break-all; 
+            font-family: 'Fira Code', monospace; 
+            font-size: 12px; 
+            color: #38bdf8; 
+            background: rgba(0, 0, 0, 0.4); 
+            padding: 12px; 
+            border-radius: 10px; 
+            border: 1px dashed rgba(56, 189, 248, 0.3); 
+            margin-top: 8px;
+        }
+
+        .alert-box {
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            margin-bottom: 12px;
             display: none;
             text-align: center;
             color: #f87171; 
             background: rgba(239, 68, 68, 0.1); 
             border: 1px solid rgba(239, 68, 68, 0.2);
         }
-
-        .btn { 
-            width: 100%; 
-            padding: 12px; 
-            border: none; 
-            color: white; 
-            font-weight: 600; 
-            border-radius: 12px; 
-            cursor: pointer; 
-            font-size: 14px; 
-            transition: all 0.25s ease; 
-            margin-top: 8px;
-        }
-        .btn-primary { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
-        .btn-success { background: linear-gradient(135deg, #10b981, #059669); }
-        .btn:hover { transform: translateY(-2px); }
-
-        .tab-menu { display: flex; gap: 8px; margin-bottom: 16px; }
-        .tab-btn {
-            flex: 1; padding: 10px; background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1); color: #9ca3af;
-            border-radius: 10px; cursor: pointer; text-align: center; font-size: 13px;
-        }
-        .tab-btn.active { background: #ff416c; color: white; border-color: #ff416c; }
-
-        .page-section { display: none; }
-        .active-section { display: block; }
-        
-        .result-box { 
-            word-break: break-all; font-family: 'Fira Code', monospace; 
-            font-size: 12px; color: #38bdf8; background: rgba(0, 0, 0, 0.3); 
-            padding: 10px; border-radius: 8px; border: 1px dashed rgba(56, 189, 248, 0.3); margin-top: 6px;
-        }
     </style>
 </head>
 <body>
-    <div class="card">
+    <div class="container">
         <div class="header">
             <h1 class="logo-title">SOLARIS HUB</h1>
-            <p class="subtitle">ระบบแปลงสคริปต์และปลดล็อกโค้ด</p>
+            <p class="subtitle">ระบบจัดการสคริปต์ & ป้องกันโค้ด Luau</p>
         </div>
 
-        <div class="tab-menu">
-            <div class="tab-btn active" onclick="switchTab('create')">⚡ แปลงสคริปต์</div>
-            <div class="tab-btn" onclick="switchTab('view')">🔓 ดูโค้ดสคริปต์</div>
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="setMode('raw')">⚡ สร้าง Loadstring (ปกติ)</button>
+            <button class="tab-btn" onclick="setMode('obf')">🔒 ล็อกโค้ด (Obfuscate)</button>
         </div>
 
         <div id="alertMsg" class="alert-box"></div>
 
-        <!-- โหมดที่ 1: แปลงสคริปต์ -->
-        <div id="createTab" class="page-section active-section">
-            <div class="form-group">
-                <label>📜 วางโค้ด Lua ของคุณ</label>
-                <textarea id="rawCode" placeholder="-- วางโค้ด Lua..."></textarea>
+        <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label style="margin:0;">📜 วางโค้ด Lua ของคุณ</label>
+                <div class="btn-action-group" style="margin:0;">
+                    <button class="btn-mini" onclick="copyInputCode()">📋 คัดลอก</button>
+                    <button class="btn-mini" onclick="clearInputCode()">🧹 ล้างช่อง</button>
+                </div>
             </div>
-            <div class="form-group">
-                <label>🔐 ตั้งรหัสผ่านสคริปต์ (ตั้งเองได้เลย)</label>
-                <input type="password" id="createPassword" placeholder="ตั้งรหัสผ่านสำหรับสคริปต์นี้">
-            </div>
-            <button class="btn btn-primary" onclick="createScript()">⚡ แปลงสคริปต์</button>
+            <textarea id="rawCode" placeholder="-- วางสคริปต์ Lua ที่นี่..."></textarea>
+        </div>
 
-            <div id="createResult" style="display: none; margin-top: 14px;">
-                <label style="font-size: 12px; color: #9ca3af;">นำลิงก์นี้ไปรันใน Roblox:</label>
-                <div class="result-box" id="scriptLink"></div>
-                <button class="btn btn-success" id="copyLinkBtn" onclick="copyText('scriptLink', 'copyLinkBtn', '📋 คัดลอกลิงก์')">📋 คัดลอกลิงก์</button>
+        <div class="options-grid" id="optionsBox" style="display: none;">
+            <div class="option-item">
+                <input type="checkbox" id="optWatermark" checked>
+                <label for="optWatermark">ใส่ SOLARIS Watermark</label>
+            </div>
+            <div class="option-item">
+                <input type="checkbox" id="optEncode" checked>
+                <label for="optEncode">บีบอัดโค้ด Hex</label>
             </div>
         </div>
 
-        <!-- โหมดที่ 2: ดูโค้ดสคริปต์ -->
-        <div id="viewTab" class="page-section">
-            <!-- หน้า 1: ใส่ Script ID -->
-            <div id="viewStep1">
-                <div class="form-group">
-                    <label>🔑 รหัสสคริปต์ (Script ID)</label>
-                    <input type="text" id="scriptIdInput" placeholder="เช่น 1954578116716">
-                </div>
-                <button class="btn btn-primary" onclick="checkScriptId()">ถัดไป ➔</button>
-            </div>
+        <button class="btn" onclick="processScript()">⚡ แปลงสคริปต์ทันที</button>
 
-            <!-- หน้า 2: ใส่ E-mail และ รหัสผ่าน -->
-            <div id="viewStep2" style="display: none;">
-                <div class="form-group">
-                    <label>📧 อีเมลของคุณ (E-mail)</label>
-                    <input type="email" id="userEmail" placeholder="example@gmail.com">
-                </div>
-                <div class="form-group">
-                    <label>🔐 รหัสผ่านสคริปต์</label>
-                    <input type="password" id="inputPassword" placeholder="กรอกรหัสผ่านของสคริปต์นี้">
-                </div>
-                <button class="btn btn-success" onclick="unlockCode()">ยืนยันเพื่อดูโค้ด 🔓</button>
-            </div>
-
-            <!-- หน้า 3: แสดงโค้ดด้านใน + ปุ่มคัดลอก -->
-            <div id="viewStep3" style="display: none;">
-                <div class="form-group">
-                    <label>📜 โค้ดสคริปต์ด้านใน:</label>
-                    <textarea id="codeDisplay" readonly></textarea>
-                </div>
-                <button class="btn btn-success" id="copyCodeBtn" onclick="copyText('codeDisplay', 'copyCodeBtn', '📋 คัดลอกโค้ด')">📋 คัดลอกโค้ด</button>
-                <button class="btn btn-primary" style="margin-top: 6px;" onclick="location.reload()">🔄 กลับหน้าหลัก</button>
-            </div>
+        <div id="resultArea" style="display: none; margin-top: 16px;">
+            <label style="font-size: 12px; color: #9ca3af;">นำโค้ดไปรันใน Roblox:</label>
+            <div class="result-box" id="scriptLink"></div>
+            <button class="btn" style="margin-top: 10px; background: #10b981;" id="copyBtn" onclick="copyResult()">📋 คัดลอกลิงก์ Loadstring</button>
         </div>
     </div>
 
     <script>
-        let targetScriptId = "";
+        let currentMode = 'raw';
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const optionsBox = document.getElementById('optionsBox');
+            optionsBox.style.display = mode === 'obf' ? 'grid' : 'none';
+        }
 
         function showAlert(msg) {
             const el = document.getElementById('alertMsg');
@@ -235,36 +268,30 @@ const htmlContent = `
             el.style.display = 'block';
         }
 
-        function clearAlert() {
+        function copyInputCode() {
+            const code = document.getElementById('rawCode').value;
+            if(!code.trim()) return showAlert('ไม่มีโค้ดในช่องวาง');
+            navigator.clipboard.writeText(code).then(() => alert('คัดลอกโค้ดเรียบร้อย!'));
+        }
+
+        function clearInputCode() {
+            document.getElementById('rawCode').value = '';
+            document.getElementById('resultArea').style.display = 'none';
+        }
+
+        async function processScript() {
             document.getElementById('alertMsg').style.display = 'none';
-        }
-
-        function switchTab(tab) {
-            clearAlert();
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active-section'));
-            
-            if(tab === 'create') {
-                document.querySelectorAll('.tab-btn')[0].classList.add('active');
-                document.getElementById('createTab').classList.add('active-section');
-            } else {
-                document.querySelectorAll('.tab-btn')[1].classList.add('active');
-                document.getElementById('viewTab').classList.add('active-section');
-            }
-        }
-
-        async function createScript() {
-            clearAlert();
             const code = document.getElementById('rawCode').value.trim();
-            const password = document.getElementById('createPassword').value.trim();
 
-            if(!code) return showAlert('โปรดวางโค้ด Lua ก่อนกดแปลง');
-            if(!password) return showAlert('กรุณาตั้งรหัสผ่านสำหรับสคริปต์นี้');
+            if(!code) return showAlert('โปรดวางโค้ด Lua ก่อนกดทำรายการ');
+
+            const isObfuscate = currentMode === 'obf';
+            const useWatermark = document.getElementById('optWatermark').checked;
 
             const res = await fetch('/api/save-script', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: code, password: password })
+                body: JSON.stringify({ code, isObfuscate, useWatermark })
             });
 
             const data = await res.json();
@@ -273,58 +300,16 @@ const htmlContent = `
             } else {
                 const loadstringUrl = 'loadstring(game:HttpGet("' + window.location.origin + '/Scripts?Id=' + data.id + '"))()';
                 document.getElementById('scriptLink').innerText = loadstringUrl;
-                document.getElementById('createResult').style.display = 'block';
+                document.getElementById('resultArea').style.display = 'block';
             }
         }
 
-        async function checkScriptId() {
-            clearAlert();
-            const id = document.getElementById('scriptIdInput').value.trim();
-            if(!id) return showAlert('กรุณากรอกรหัสสคริปต์');
-
-            const res = await fetch('/api/check-script?id=' + id);
-            const data = await res.json();
-
-            if(!res.ok) {
-                showAlert(data.error || 'ไม่พบรหัสสคริปต์นี้');
-            } else {
-                targetScriptId = id;
-                document.getElementById('viewStep1').style.display = 'none';
-                document.getElementById('viewStep2').style.display = 'block';
-            }
-        }
-
-        async function unlockCode() {
-            clearAlert();
-            const email = document.getElementById('userEmail').value.trim();
-            const password = document.getElementById('inputPassword').value.trim();
-
-            if(!email || !email.includes('@')) return showAlert('อีเมลไม่ผ่าน กรุณากรอกอีเมลให้ถูกต้อง');
-            if(!password) return showAlert('กรุณากรอกรหัสผ่าน');
-
-            const res = await fetch('/api/get-code', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ scriptId: targetScriptId, email: email, password: password })
-            });
-
-            const data = await res.json();
-            if(!res.ok) {
-                showAlert(data.error);
-            } else {
-                document.getElementById('codeDisplay').value = data.code;
-                document.getElementById('viewStep2').style.display = 'none';
-                document.getElementById('viewStep3').style.display = 'block';
-            }
-        }
-
-        function copyText(elementId, btnId, originalText) {
-            const target = document.getElementById(elementId);
-            const textToCopy = target.value || target.innerText;
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                const btn = document.getElementById(btnId);
-                btn.innerText = '✅ คัดลอกเรียบร้อย!';
-                setTimeout(() => { btn.innerText = originalText; }, 2000);
+        function copyResult() {
+            const text = document.getElementById('scriptLink').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.innerText = '✅ คัดลอกลิงก์เรียบร้อย!';
+                setTimeout(() => { btn.innerText = '📋 คัดลอกลิงก์ Loadstring'; }, 2000);
             });
         }
     </script>
@@ -334,118 +319,38 @@ const htmlContent = `
 
 app.get('/', (req, res) => res.send(htmlContent));
 
-// บันทึกสคริปต์ + รหัสผ่าน
 app.post('/api/save-script', (req, res) => {
-    const { code, password } = req.body;
+    const { code, isObfuscate, useWatermark } = req.body;
     
-    if (!isValidLuaCode(code || '')) {
-        return res.status(400).json({ error: 'นี่ไม่ใช่โค้ดโปรดใส่โค้ด' });
-    }
-    if (!password) {
-        return res.status(400).json({ error: 'กรุณาตั้งรหัสผ่านสคริปต์' });
+    if (!code || !code.trim()) {
+        return res.status(400).json({ error: 'กรุณากรอกโค้ด Lua' });
     }
 
     const scriptId = Math.floor(1000000000000 + Math.random() * 9000000000000).toString();
-    const obfuscated = obfuscateLua(code);
     
-    database[scriptId] = {
-        password: password,
-        rawCode: code,
-        obfuscated: obfuscated
-    };
-    
+    let finalCode = code;
+    if (isObfuscate) {
+        finalCode = safeObfuscate(code, useWatermark);
+    }
+
+    database[scriptId] = { code: finalCode };
     saveData();
 
     res.json({ id: scriptId });
 });
 
-// ตรวจสอบ Script ID
-app.get('/api/check-script', (req, res) => {
-    const id = req.query.id;
-    if (!id || !database[id]) {
-        return res.status(400).json({ error: 'รหัสสคริปต์ไม่ผ่าน' });
-    }
-    res.json({ success: true });
-});
-
-// ตรวจสอบ Email + Password เพื่อเปิดดูโค้ด
-app.post('/api/get-code', (req, res) => {
-    const { scriptId, email, password } = req.body;
-
-    if (!email || !email.includes('@')) {
-        return res.status(400).json({ error: 'อีเมลไม่ผ่าน' });
-    }
-
-    const scriptInfo = database[scriptId];
-    if (!scriptInfo) {
-        return res.status(400).json({ error: 'ไม่พบสคริปต์นี้' });
-    }
-
-    if (scriptInfo.password !== password) {
-        return res.status(400).json({ error: 'รหัสไม่ผ่าน หรือ อีเมลไม่ผ่าน' });
-    }
-
-    res.json({ success: true, code: scriptInfo.rawCode });
-});
-
-// ดึงสคริปต์ไปรันในเกม Roblox
 app.get('/Scripts', (req, res) => {
     const scriptId = req.query.Id;
-    const userAgent = req.headers['user-agent'] || '';
-
     const scriptInfo = database[scriptId];
+
     if (!scriptId || !scriptInfo) {
-        return res.status(404).send('Script Not Found');
+        return res.status(404).send('-- Script Not Found');
     }
 
-    const isBrowser = userAgent.includes('Mozilla') && !userAgent.includes('Roblox');
-    if (isBrowser) {
-        return res.status(403).send(`
-        <!DOCTYPE html>
-        <html lang="th">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Access Denied - SOLARIS HUB</title>
-            <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
-            <style>
-                * { box-sizing: border-box; font-family: 'Kanit', sans-serif; }
-                body { 
-                    background: #090a0f; 
-                    background-image: radial-gradient(circle at 50% -20%, #1e1b4b, #090a0f 80%);
-                    color: #f3f4f6; padding: 20px; margin: 0; min-height: 100vh;
-                    display: flex; justify-content: center; align-items: center; text-align: center;
-                }
-                .card { 
-                    background: rgba(18, 20, 29, 0.85); backdrop-filter: blur(16px);
-                    border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 20px; padding: 32px 24px; max-width: 400px; width: 100%;
-                }
-                .icon { font-size: 50px; margin-bottom: 12px; }
-                h1 { font-size: 22px; color: #f87171; margin: 0 0 8px 0; }
-                p { font-size: 14px; color: #9ca3af; margin: 0 0 20px 0; line-height: 1.5; }
-                .btn { 
-                    display: inline-block; width: 100%; padding: 12px; 
-                    background: linear-gradient(135deg, #ff416c, #ff4b2b); color: white; 
-                    text-decoration: none; font-weight: 600; border-radius: 12px; font-size: 14px;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="card">
-                <div class="icon">🔒</div>
-                <h1>ACCESS DENIED</h1>
-                <p>สคริปต์นี้ถูกคุ้มครองความปลอดภัย<br>ไม่อนุญาตให้เปิดดูผ่านเว็บเบราว์เซอร์ครับ กรุณานำลิงก์ไปรันในเกม Roblox</p>
-                <a href="/" class="btn">กลับหน้าหลัก SOLARIS HUB</a>
-            </div>
-        </body>
-        </html>
-        `);
-    }
-
-    res.type('text/plain');
-    res.send(scriptInfo.obfuscated);
+    res.type('text/plain; charset=utf-8');
+    res.send(scriptInfo.code);
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log('Server running on port ' + PORT));
-        
+app.listen(PORT, () => console.log('SOLARIS HUB running on port ' + PORT));
+    
