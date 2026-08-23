@@ -9,7 +9,6 @@ app.use(express.json());
 
 // Discord Webhooks
 const DISCORD_STATUS_WEBHOOK = "https://discord.com/api/webhooks/1541093112695496744/Fgd7iGWH9LPpkKKIUpw_-qVTBic8WSvhYl07mddNGXzA0p5xw0z_DNA0CzAE65OX45W_";
-const DISCORD_VERIFY_WEBHOOK = "https://discord.com/api/webhooks/1541095683615096923/j6GNXZb7HrAh-H7L5LaurTSIrPbKU9DlEMbGSlRiEyfk-CcWAkzHTBsF5Zx1XC5Ox7bM";
 
 const DATA_DIR = fs.existsSync('/data') ? '/data' : path.join(__dirname, 'data_store');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -80,7 +79,7 @@ function postWebhook(webhookUrl, payload) {
     }
 }
 
-// Main Page HTML (Clean Script Converter Only)
+// Main Page HTML
 const htmlContent = `
 <!DOCTYPE html>
 <html lang="en">
@@ -216,7 +215,37 @@ const htmlContent = `
             color: var(--green-code);
             font-size: 12px;
             font-weight: 600;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
+        }
+
+        .raw-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+        .raw-input-box {
+            flex: 1;
+            background: rgba(10, 12, 20, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 12px;
+            color: #cbd5e1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            outline: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .btn-copy-sm {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0 16px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
         }
 
         .code-display {
@@ -241,7 +270,17 @@ const htmlContent = `
             font-weight: 600;
             font-size: 12.5px;
             cursor: pointer;
+            margin-bottom: 20px;
         }
+
+        .info-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 14px;
+            font-size: 11.5px;
+            color: #64748b;
+            line-height: 1.6;
+        }
+        .info-footer strong { color: #94a3b8; }
     </style>
 </head>
 <body>
@@ -276,12 +315,20 @@ const htmlContent = `
     <div class="result-box" id="resultArea">
         <div class="status-badge">✔ Raw ready — Browsers will receive 403</div>
 
-        <div class="form-group">
-            <span class="label-title">LOADSTRING (ROBLOX)</span>
-            <div class="code-display" id="loadstringBox"></div>
+        <span class="label-title">RAW URL</span>
+        <div class="raw-input-group">
+            <input type="text" class="raw-input-box" id="rawUrlBox" readonly>
+            <button class="btn-copy-sm" id="copyRawBtn" onclick="copyRawUrl()">Copy</button>
         </div>
 
-        <button class="btn-copy-main" id="copyBtn" onclick="copyText()">📋 Copy Loadstring</button>
+        <span class="label-title">LOADSTRING (ROBLOX)</span>
+        <div class="code-display" id="loadstringBox"></div>
+        <button class="btn-copy-main" id="copyBtn" onclick="copyLoadstring()">📋 Copy Loadstring</button>
+
+        <div class="info-footer">
+            <strong>How the block works:</strong> Edge Function checks User-Agent + Sec-Fetch-* + Accept headers.<br>
+            Modern browsers send Sec-Fetch → 403. Roblox HttpGet / most executors do not → code is returned.
+        </div>
     </div>
 </div>
 
@@ -316,12 +363,22 @@ async function createRaw() {
     const data = await res.json();
     if (res.ok) {
         const rawLink = window.location.origin + '/raw/' + data.id;
+        document.getElementById('rawUrlBox').value = rawLink;
         document.getElementById('loadstringBox').innerText = 'loadstring(game:HttpGet("' + rawLink + '"))()';
         document.getElementById('resultArea').style.display = 'block';
     }
 }
 
-function copyText() {
+function copyRawUrl() {
+    const text = document.getElementById('rawUrlBox').value;
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyRawBtn');
+        btn.innerText = 'Copied!';
+        setTimeout(() => { btn.innerText = 'Copy'; }, 2000);
+    });
+}
+
+function copyLoadstring() {
     const text = document.getElementById('loadstringBox').innerText;
     navigator.clipboard.writeText(text).then(() => {
         const btn = document.getElementById('copyBtn');
