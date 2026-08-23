@@ -2,9 +2,13 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const https = require('https');
 const app = express();
 
 app.use(express.json());
+
+// Discord Webhook URL
+const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1541093112695496744/Fgd7iGWH9LPpkKKIUpw_-qVTBic8WSvhYl07mddNGXzA0p5xw0z_DNA0CzAE65OX45W_";
 
 const DATA_DIR = fs.existsSync('/data') ? '/data' : path.join(__dirname, 'data_store');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -29,6 +33,45 @@ function generateSecureId(length = 22) {
         result += chars[bytes[i] % chars.length];
     }
     return result;
+}
+
+// Function to Send Status Embed to Discord
+function sendDiscordStatus() {
+    const timeUnix = Math.floor(Date.now() / 1000);
+    const payload = JSON.stringify({
+        username: "SOLARIS SYSTEM MONITOR",
+        avatar_url: "https://i.imgur.com/8N4T8I3.png",
+        embeds: [
+            {
+                title: "🟢 SYSTEM STATUS : ONLINE",
+                description: "All core systems and script vault services are running smoothly.",
+                color: 2278750,
+                fields: [
+                    { name: "🌐 Web Server", value: "`Operational` (Render)", inline: true },
+                    { name: "⚡ Script Vault", value: "`Online`", inline: true },
+                    { name: "🛡️ Anti-Browser Security", value: "`Active` (403 Protection)", inline: true },
+                    { name: "🔄 Last Started", value: `<t:${timeUnix}:R>`, inline: true }
+                ],
+                footer: { text: "SOLARIS HUB • Automated System Monitor" },
+                timestamp: new Date().toISOString()
+            }
+        ]
+    });
+
+    try {
+        const url = new URL(DISCORD_WEBHOOK_URL);
+        const req = https.request(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(payload)
+            }
+        });
+        req.write(payload);
+        req.end();
+    } catch (err) {
+        console.error("Failed to send webhook status:", err);
+    }
 }
 
 // Main Page HTML (All English)
@@ -368,7 +411,7 @@ function copyText(elementId, btn, isDiv = false) {
 </html>
 `;
 
-// Beautiful 403 Page HTML (All English + Home Button)
+// Beautiful 403 Page HTML
 const forbiddenPageHtml = `
 <!DOCTYPE html>
 <html lang="en">
@@ -516,4 +559,7 @@ app.get('/raw/:id', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log('SOLARIS RUNNER server active on port ' + PORT));
+app.listen(PORT, () => {
+    console.log('SOLARIS RUNNER server active on port ' + PORT);
+    sendDiscordStatus(); // Send Online Status to Discord Webhook
+});
