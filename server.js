@@ -20,7 +20,7 @@ function saveData() {
     fs.writeFileSync(DB_FILE, JSON.stringify(database, null, 2));
 }
 
-// ฟังก์ชันสุ่ม Secure Unique ID ความยาว 22 ตัวอักษร เช่น iWig0QoLQyNePrCUajPE6JK
+// สุ่ม Secure ID ความยาว 22 ตัวอักษร
 function generateSecureId(length = 22) {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     const bytes = crypto.randomBytes(length);
@@ -33,241 +33,292 @@ function generateSecureId(length = 22) {
 
 const htmlContent = `
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LuauForge - Lock System</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>SOLARIS RUNNER - Script Vault</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(20, 22, 34, 0.9);
+            --accent-main: #ff5722;
+            --accent-glow: rgba(255, 87, 34, 0.35);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #f1f5f9;
+            --text-sub: #64748b;
+            --green-code: #22c55e;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Kanit', sans-serif; }
+        
         body {
-            background-color: #0b0c10;
-            color: #94a3b8;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255, 87, 34, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 40%);
+            color: var(--text-main);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: 24px 12px;
         }
-        .container {
-            background: #11121c;
-            border: 1px solid #1e202e;
-            border-radius: 16px;
+
+        .main-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
             width: 100%;
-            max-width: 440px;
-            padding: 24px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            max-width: 480px;
+            padding: 28px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
         }
-        .label {
-            font-size: 11px;
+
+        .brand-header {
+            text-align: center;
+            margin-bottom: 22px;
+        }
+        .brand-title {
+            font-size: 24px;
             font-weight: 700;
-            color: #64748b;
-            letter-spacing: 0.8px;
+            background: linear-gradient(135deg, #ff5722, #ff8a65);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.5px;
+        }
+        .brand-sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+
+        .form-group { margin-bottom: 18px; }
+        .label-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #94a3b8;
+            letter-spacing: 1px;
             text-transform: uppercase;
             margin-bottom: 8px;
             display: block;
         }
-        .form-group { margin-bottom: 20px; }
-        
+
         input[type="text"] {
             width: 100%;
-            background: #0d0e17;
-            border: 1px solid #1e202f;
-            border-radius: 10px;
+            background: rgba(10, 12, 20, 0.7);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
             padding: 12px 14px;
-            color: #f1f5f9;
+            color: var(--text-main);
             font-size: 13px;
             outline: none;
+            transition: all 0.3s;
         }
-        input[type="text"]::placeholder { color: #334155; }
-        input[type="text"]:focus { border-color: #3b82f6; }
+        input[type="text"]:focus {
+            border-color: var(--accent-main);
+            box-shadow: 0 0 12px var(--accent-glow);
+        }
 
-        .editor-header {
+        .editor-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 8px;
         }
-        .editor-actions { display: flex; gap: 8px; }
-        .btn-sub {
-            background: #181926;
-            border: 1px solid #232538;
+        .btn-mini-group { display: flex; gap: 6px; }
+        .btn-mini {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
             color: #cbd5e1;
-            padding: 6px 12px;
+            padding: 5px 10px;
             border-radius: 8px;
-            font-size: 12px;
+            font-size: 11px;
             cursor: pointer;
-            font-weight: 500;
+            transition: all 0.2s;
         }
-        .btn-sub:hover { background: #222436; }
+        .btn-mini:hover { background: rgba(255, 255, 255, 0.1); }
 
-        .editor-container {
-            position: relative;
-            background: #0a0b12;
-            border: 1px solid #1c1e2d;
+        .editor-wrapper {
+            background: rgba(10, 12, 20, 0.8);
+            border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 14px;
+            padding: 12px;
         }
         textarea {
             width: 100%;
-            height: 180px;
+            height: 170px;
             background: transparent;
             border: none;
-            color: #94a3b8;
+            color: #cbd5e1;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
+            font-size: 12.5px;
             outline: none;
             resize: vertical;
-            line-height: 1.6;
+            line-height: 1.5;
         }
 
-        .editor-footer {
+        .editor-bottom {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 16px;
+            margin-top: 14px;
         }
-        .char-count { font-size: 12px; color: #475569; }
+        .char-counter { font-size: 12px; color: var(--text-sub); font-family: 'JetBrains Mono', monospace; }
 
         .btn-submit {
-            background: #ff5722;
+            background: linear-gradient(135deg, #ff5722, #e64a19);
             color: #ffffff;
             border: none;
             border-radius: 12px;
-            padding: 12px 24px;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            box-shadow: 0 4px 20px rgba(255, 87, 34, 0.3);
-            transition: all 0.2s;
-        }
-        .btn-submit:hover { background: #f4511e; transform: translateY(-1px); }
-
-        .result-section { display: none; }
-        .status-header {
-            color: #22c55e;
+            padding: 11px 22px;
             font-size: 13px;
             font-weight: 600;
-            margin-bottom: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px 18px var(--accent-glow);
+            transition: all 0.25s;
+        }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 22px var(--accent-glow); }
+
+        /* ผลลัพธ์โผล่ด้านล่าง */
+        .result-box {
+            display: none;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.12);
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status-badge {
+            color: var(--green-code);
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 14px;
             display: flex;
             align-items: center;
             gap: 6px;
         }
-        .input-with-btn {
-            display: flex;
-            gap: 8px;
-        }
-        .input-readonly {
-            background: #090a10 !important;
-            color: #64748b !important;
-            border-color: #1a1c2a !important;
+
+        .copy-input-flex { display: flex; gap: 8px; }
+        .input-read {
+            background: rgba(8, 9, 15, 0.9) !important;
+            color: var(--text-sub) !important;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
+            font-size: 11px;
         }
-        .btn-copy {
-            background: #1a1c2b;
-            border: 1px solid #282a3f;
-            color: #e2e8f0;
-            padding: 0 16px;
+        
+        .btn-copy-small {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-color);
+            color: #f1f5f9;
+            padding: 0 14px;
             border-radius: 10px;
-            font-weight: 600;
             font-size: 12px;
+            font-weight: 600;
             cursor: pointer;
         }
-        .btn-copy:hover { background: #25283d; }
+        .btn-copy-small:hover { background: rgba(255, 255, 255, 0.15); }
 
-        .loadstring-box {
-            background: #090a10;
-            border: 1px solid #171926;
+        .code-display {
+            background: rgba(8, 9, 15, 0.9);
+            border: 1px solid rgba(34, 197, 94, 0.2);
             border-radius: 10px;
-            padding: 14px;
-            color: #22c55e;
+            padding: 12px;
+            color: var(--green-code);
             font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            line-height: 1.6;
+            font-size: 11.5px;
+            line-height: 1.5;
             word-break: break-all;
             margin-bottom: 12px;
         }
 
-        .btn-full-copy {
+        .btn-copy-main {
             width: 100%;
-            background: #1a1c2b;
-            border: 1px solid #282a3f;
-            color: #cbd5e1;
-            padding: 12px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 11px;
             border-radius: 10px;
             font-weight: 600;
-            font-size: 13px;
+            font-size: 12.5px;
             cursor: pointer;
-            margin-bottom: 20px;
+            transition: all 0.2s;
+            margin-bottom: 16px;
         }
-        .btn-full-copy:hover { background: #24273c; }
+        .btn-copy-main:hover { background: rgba(255, 255, 255, 0.12); }
 
-        .info-footer {
-            border-top: 1px solid #181a27;
-            padding-top: 16px;
+        .info-note {
             font-size: 11px;
-            color: #475569;
+            color: var(--text-sub);
             line-height: 1.6;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
         }
-        .info-footer strong { color: #64748b; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="formSection">
-        <div class="form-group">
-            <span class="label">SCRIPT NAME (OPTIONAL)</span>
-            <input type="text" id="scriptName" placeholder="e.g. auto-farm, key-system...">
+<div class="main-card">
+    <div class="brand-header">
+        <div class="brand-title">SOLARIS RUNNER</div>
+        <div class="brand-sub">Secure Executable Script Engine</div>
+    </div>
+
+    <!-- ส่วนกรอกโค้ด -->
+    <div class="form-group">
+        <span class="label-title">SCRIPT NAME (OPTIONAL)</span>
+        <input type="text" id="scriptName" placeholder="e.g. MyScriptHub, AutoFarm...">
+    </div>
+
+    <div class="form-group">
+        <div class="editor-top">
+            <span class="label-title" style="margin:0;">CODE (LUA / TEXT)</span>
+            <div class="btn-mini-group">
+                <button class="btn-mini" onclick="document.getElementById('fileInput').click()">📁 อัปโหลดไฟล์</button>
+                <button class="btn-mini" onclick="clearCode()">🧹 ล้าง</button>
+            </div>
         </div>
 
-        <div class="form-group">
-            <div class="editor-header">
-                <span class="label" style="margin:0;">CODE (LUA / TEXT)</span>
-                <div class="editor-actions">
-                    <button class="btn-sub" onclick="document.getElementById('fileInput').click()">📁 Upload .lua / .txt</button>
-                    <button class="btn-sub" onclick="clearCode()">Clear</button>
-                </div>
-            </div>
-            
-            <input type="file" id="fileInput" accept=".lua,.txt" style="display:none;" onchange="handleFile(this)">
+        <input type="file" id="fileInput" accept=".lua,.txt" style="display:none;" onchange="handleFile(this)">
 
-            <div class="editor-container">
-                <textarea id="rawCode" placeholder="-- paste your code here or drop a file&#10;print('hello from LuauForge-Lock')" oninput="updateCount()"></textarea>
-            </div>
+        <div class="editor-wrapper">
+            <textarea id="rawCode" placeholder="-- วางสคริปต์ Lua ของคุณที่นี่..." oninput="updateCount()"></textarea>
+        </div>
 
-            <div class="editor-footer">
-                <span class="char-count" id="charCount">0 characters</span>
-                <button class="btn-submit" onclick="createRaw()">Create Secure Raw</button>
-            </div>
+        <div class="editor-bottom">
+            <span class="char-counter" id="charCount">0 characters</span>
+            <button class="btn-submit" onclick="createRaw()">⚡ แปลงสคริปต์</button>
         </div>
     </div>
 
-    <div class="result-section" id="resultSection">
-        <div class="status-header">
+    <!-- ส่วนแสดงผลลัพธ์ -->
+    <div class="result-box" id="resultArea">
+        <div class="status-badge">
             ✔ Raw ready — Browsers will receive 403
         </div>
 
         <div class="form-group">
-            <span class="label">RAW URL</span>
-            <div class="input-with-btn">
-                <input type="text" id="rawUrl" class="input-readonly" readonly>
-                <button class="btn-copy" onclick="copyText('rawUrl', this)">Copy</button>
+            <span class="label-title">RAW URL</span>
+            <div class="copy-input-flex">
+                <input type="text" id="rawUrl" class="input-read" readonly>
+                <button class="btn-copy-small" onclick="copyText('rawUrl', this)">Copy</button>
             </div>
         </div>
 
         <div class="form-group">
-            <span class="label">LOADSTRING (ROBLOX)</span>
-            <div class="loadstring-box" id="loadstringBox"></div>
+            <span class="label-title">LOADSTRING (ROBLOX)</span>
+            <div class="code-display" id="loadstringBox"></div>
         </div>
 
-        <button class="btn-full-copy" id="copyLoadstringBtn" onclick="copyText('loadstringBox', this, true)">Copy Loadstring</button>
+        <button class="btn-copy-main" id="copyLoadstringBtn" onclick="copyText('loadstringBox', this, true)">📋 Copy Loadstring</button>
 
-        <div class="info-footer">
-            <strong>How the block works:</strong> Edge Function checks User-Agent + Sec-Fetch-* + Accept headers.<br>
-            Modern browsers send Sec-Fetch → 403. Roblox HttpGet / most executors do not → code is returned.
+        <div class="info-note">
+            <strong>How the block works:</strong> System checks User-Agent + Sec-Fetch headers. Modern browsers receive 403 Forbidden, while Roblox executors retrieve full code cleanly.
         </div>
     </div>
 </div>
@@ -297,7 +348,7 @@ function handleFile(input) {
 
 async function createRaw() {
     const code = document.getElementById('rawCode').value.trim();
-    if (!code) return alert('Please enter code first');
+    if (!code) return alert('กรุณาเลือกหรือวางโค้ด Lua ก่อนครับ');
 
     const res = await fetch('/api/save-script', {
         method: 'POST',
@@ -313,8 +364,9 @@ async function createRaw() {
         document.getElementById('rawUrl').value = rawLink;
         document.getElementById('loadstringBox').innerText = loadstringText;
         
-        document.getElementById('formSection').style.display = 'none';
-        document.getElementById('resultSection').style.display = 'block';
+        const resultArea = document.getElementById('resultArea');
+        resultArea.style.display = 'block';
+        resultArea.scrollIntoView({ behavior: 'smooth' });
     } else {
         alert(data.error);
     }
@@ -336,7 +388,6 @@ function copyText(elementId, btn, isDiv = false) {
 
 app.get('/', (req, res) => res.send(htmlContent));
 
-// API บันทึกโค้ดและสร้าง Unique ID 22 หลัก
 app.post('/api/save-script', (req, res) => {
     const { code } = req.body;
     if (!code || !code.trim()) return res.status(400).json({ error: 'Code cannot be empty' });
@@ -352,7 +403,7 @@ app.post('/api/save-script', (req, res) => {
     res.json({ id });
 });
 
-// ดึงสคริปต์ไปรัน - ตรวจจับ Header สกัดกั้น Web Browser (ส่ง 403 Forbidden)
+// ดึงสคริปต์ไปรัน (บล็อก Web Browser ส่ง 403 Forbidden)
 app.get('/raw/:id', (req, res) => {
     const id = req.params.id;
     const script = database[id];
@@ -364,7 +415,6 @@ app.get('/raw/:id', (req, res) => {
     const secFetchMode = req.headers['sec-fetch-mode'];
     const acceptHeader = (req.headers['accept'] || '').toLowerCase();
 
-    // บล็อกถ้าคำขอมาจาก Browser
     const isBrowser = secFetchDest || secFetchMode || 
                       acceptHeader.includes('text/html') || 
                       (userAgent.includes('mozilla') && !userAgent.includes('roblox'));
@@ -378,4 +428,4 @@ app.get('/raw/:id', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log('Server active on port ' + PORT));
+app.listen(PORT, () => console.log('SOLARIS RUNNER server active on port ' + PORT));
