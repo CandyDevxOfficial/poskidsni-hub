@@ -20,7 +20,7 @@ function saveData() {
     fs.writeFileSync(DB_FILE, JSON.stringify(database, null, 2));
 }
 
-// ฟังก์ชันสุ่มรหัสปลอดภัย
+// สุ่ม Secure ID ความยาว 22 ตัวอักษร
 function generateSecureId(length = 22) {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     const bytes = crypto.randomBytes(length);
@@ -29,17 +29,6 @@ function generateSecureId(length = 22) {
         result += chars[bytes[i] % chars.length];
     }
     return result;
-}
-
-// ฟังก์ชันแปลงชื่อสคริปต์ (แทนที่ช่องว่างด้วย - และลบตัวอักษรพิเศษออก)
-function formatSlugName(name) {
-    if (!name || !name.trim()) return null;
-    const cleanName = name.trim()
-        .replace(/[^a-zA-Z0-9\s-]/g, '') // เอาตัวอักษรพิเศษออก เหลือเฉพาะภาษาอังกฤษ ตัวเลข ช่องว่าง และขีด
-        .replace(/\s+/g, '-');            // เปลี่ยนช่องว่างทั้งหมดให้เป็นขีด (-)
-    
-    const randomSuffix = Math.floor(10000 + Math.random() * 90000); // สุ่มเลข 5 หลักปิดท้าย
-    return `${cleanName}-${randomSuffix}`;
 }
 
 const htmlContent = `
@@ -113,22 +102,6 @@ const htmlContent = `
             display: block;
         }
 
-        input[type="text"] {
-            width: 100%;
-            background: rgba(10, 12, 20, 0.7);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 12px 14px;
-            color: var(--text-main);
-            font-size: 13px;
-            outline: none;
-            transition: all 0.3s;
-        }
-        input[type="text"]:focus {
-            border-color: var(--accent-main);
-            box-shadow: 0 0 12px var(--accent-glow);
-        }
-
         .editor-top {
             display: flex;
             justify-content: space-between;
@@ -156,7 +129,7 @@ const htmlContent = `
         }
         textarea {
             width: 100%;
-            height: 170px;
+            height: 190px;
             background: transparent;
             border: none;
             color: #cbd5e1;
@@ -189,6 +162,7 @@ const htmlContent = `
         }
         .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 22px var(--accent-glow); }
 
+        /* ผลลัพธ์โผล่ด้านล่าง */
         .result-box {
             display: none;
             margin-top: 24px;
@@ -218,6 +192,11 @@ const htmlContent = `
             color: var(--text-sub) !important;
             font-family: 'JetBrains Mono', monospace;
             font-size: 11px;
+            width: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 12px;
+            outline: none;
         }
         
         .btn-copy-small {
@@ -279,11 +258,7 @@ const htmlContent = `
         <div class="brand-sub">Secure Executable Script Engine</div>
     </div>
 
-    <div class="form-group">
-        <span class="label-title">SCRIPT NAME (OPTIONAL)</span>
-        <input type="text" id="scriptName" placeholder="e.g. Brookhaven RP Coquette Hub Updated 2025">
-    </div>
-
+    <!-- ส่วนกรอกโค้ด -->
     <div class="form-group">
         <div class="editor-top">
             <span class="label-title" style="margin:0;">CODE (LUA / TEXT)</span>
@@ -305,6 +280,7 @@ const htmlContent = `
         </div>
     </div>
 
+    <!-- ส่วนแสดงผลลัพธ์ -->
     <div class="result-box" id="resultArea">
         <div class="status-badge">
             ✔ Raw ready — Browsers will receive 403
@@ -356,14 +332,12 @@ function handleFile(input) {
 
 async function createRaw() {
     const code = document.getElementById('rawCode').value.trim();
-    const scriptName = document.getElementById('scriptName').value.trim();
-
     if (!code) return alert('กรุณาเลือกหรือวางโค้ด Lua ก่อนครับ');
 
     const res = await fetch('/api/save-script', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, scriptName })
+        body: JSON.stringify({ code })
     });
 
     const data = await res.json();
@@ -399,19 +373,12 @@ function copyText(elementId, btn, isDiv = false) {
 app.get('/', (req, res) => res.send(htmlContent));
 
 app.post('/api/save-script', (req, res) => {
-    const { code, scriptName } = req.body;
+    const { code } = req.body;
     if (!code || !code.trim()) return res.status(400).json({ error: 'Code cannot be empty' });
 
-    let id = formatSlugName(scriptName);
-    
-    // ถ้าไม่มีชื่อ ให้สุ่มแบบยาว 22 ตัวอักษร
-    if (!id) {
-        id = generateSecureId(22);
-    }
-
-    // ป้องกัน ID ซ้ำ
+    let id = generateSecureId(22);
     while (database[id]) {
-        id = formatSlugName(scriptName) || generateSecureId(22);
+        id = generateSecureId(22);
     }
 
     database[id] = { code };
@@ -446,4 +413,3 @@ app.get('/raw/:id', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log('SOLARIS RUNNER server active on port ' + PORT));
-        
