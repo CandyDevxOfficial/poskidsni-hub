@@ -7,24 +7,29 @@ const app = express();
 
 app.use(express.json());
 
-// Discord Webhook URL
-const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1541093112695496744/Fgd7iGWH9LPpkKKIUpw_-qVTBic8WSvhYl07mddNGXzA0p5xw0z_DNA0CzAE65OX45W_";
+// Discord Webhooks
+const DISCORD_STATUS_WEBHOOK = "https://discord.com/api/webhooks/1541093112695496744/Fgd7iGWH9LPpkKKIUpw_-qVTBic8WSvhYl07mddNGXzA0p5xw0z_DNA0CzAE65OX45W_";
+const DISCORD_VERIFY_WEBHOOK = "https://discord.com/api/webhooks/1541095683615096923/j6GNXZb7HrAh-H7L5LaurTSIrPbKU9DlEMbGSlRiEyfk-CcWAkzHTBsF5Zx1XC5Ox7bM";
 
 const DATA_DIR = fs.existsSync('/data') ? '/data' : path.join(__dirname, 'data_store');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
-let database = {};
+let database = { scripts: {}, users: [] };
 if (fs.existsSync(DB_FILE)) {
-    try { database = JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); } catch (e) { database = {}; }
+    try { 
+        const parsed = JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); 
+        database = { scripts: parsed.scripts || {}, users: parsed.users || [] };
+    } catch (e) { 
+        database = { scripts: {}, users: [] }; 
+    }
 }
 
 function saveData() {
     fs.writeFileSync(DB_FILE, JSON.stringify(database, null, 2));
 }
 
-// Generate Secure ID (22 chars)
 function generateSecureId(length = 22) {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     const bytes = crypto.randomBytes(length);
@@ -35,31 +40,54 @@ function generateSecureId(length = 22) {
     return result;
 }
 
-// Function to Send Status Embed to Discord
+// Send Status Webhook
 function sendDiscordStatus() {
     const timeUnix = Math.floor(Date.now() / 1000);
     const payload = JSON.stringify({
         username: "SOLARIS SYSTEM MONITOR",
         avatar_url: "https://i.imgur.com/8N4T8I3.png",
-        embeds: [
-            {
-                title: "🟢 SYSTEM STATUS : ONLINE",
-                description: "All core systems and script vault services are running smoothly.",
-                color: 2278750,
-                fields: [
-                    { name: "🌐 Web Server", value: "`Operational` (Render)", inline: true },
-                    { name: "⚡ Script Vault", value: "`Online`", inline: true },
-                    { name: "🛡️ Anti-Browser Security", value: "`Active` (403 Protection)", inline: true },
-                    { name: "🔄 Last Started", value: `<t:${timeUnix}:R>`, inline: true }
-                ],
-                footer: { text: "SOLARIS HUB • Automated System Monitor" },
-                timestamp: new Date().toISOString()
-            }
-        ]
+        embeds: [{
+            title: "🟢 SYSTEM STATUS : ONLINE",
+            description: "All core systems and script vault services are running smoothly.",
+            color: 2278750,
+            fields: [
+                { name: "🌐 Web Server", value: "`Operational` (Render)", inline: true },
+                { name: "⚡ Script Vault", value: "`Online`", inline: true },
+                { name: "🛡️ Security Logger", value: "`Active`", inline: true },
+                { name: "🔄 Last Started", value: `<t:${timeUnix}:R>`, inline: true }
+            ],
+            footer: { text: "SOLARIS HUB • Automated System Monitor" },
+            timestamp: new Date().toISOString()
+        }]
     });
+    postWebhook(DISCORD_STATUS_WEBHOOK, payload);
+}
 
+// Send Verification Log Webhook
+function sendVerificationLog(discordId) {
+    const timeUnix = Math.floor(Date.now() / 1000);
+    const payload = JSON.stringify({
+        username: "SOLARIS VERIFY LOG",
+        avatar_url: "https://i.imgur.com/8N4T8I3.png",
+        embeds: [{
+            title: "🎉 NEW USER VERIFIED / ROLE CLAIMED",
+            description: `User <@${discordId}> has successfully verified or requested access.`,
+            color: 65421,
+            fields: [
+                { name: "👤 User Mention", value: `<@${discordId}>`, inline: true },
+                { name: "🆔 Discord ID", value: `\`${discordId}\``, inline: true },
+                { name: "⏰ Verified At", value: `<t:${timeUnix}:F>`, inline: false }
+            ],
+            footer: { text: "SOLARIS HUB • Role Verification System" },
+            timestamp: new Date().toISOString()
+        }]
+    });
+    postWebhook(DISCORD_VERIFY_WEBHOOK, payload);
+}
+
+function postWebhook(webhookUrl, payload) {
     try {
-        const url = new URL(DISCORD_WEBHOOK_URL);
+        const url = new URL(webhookUrl);
         const req = https.request(url, {
             method: 'POST',
             headers: {
@@ -70,11 +98,11 @@ function sendDiscordStatus() {
         req.write(payload);
         req.end();
     } catch (err) {
-        console.error("Failed to send webhook status:", err);
+        console.error("Failed to send webhook:", err);
     }
 }
 
-// Main Page HTML (All English)
+// Main Page HTML
 const htmlContent = `
 <!DOCTYPE html>
 <html lang="en">
@@ -121,17 +149,13 @@ const htmlContent = `
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
         }
 
-        .brand-header {
-            text-align: center;
-            margin-bottom: 22px;
-        }
+        .brand-header { text-align: center; margin-bottom: 22px; }
         .brand-title {
             font-size: 24px;
             font-weight: 700;
             background: linear-gradient(135deg, #ff5722, #ff8a65);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            letter-spacing: 0.5px;
         }
         .brand-sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
 
@@ -146,113 +170,52 @@ const htmlContent = `
             display: block;
         }
 
-        .editor-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-        .btn-mini-group { display: flex; gap: 6px; }
-        .btn-mini {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border-color);
-            color: #cbd5e1;
-            padding: 5px 10px;
-            border-radius: 8px;
-            font-size: 11px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-mini:hover { background: rgba(255, 255, 255, 0.1); }
-
         .editor-wrapper {
             background: rgba(10, 12, 20, 0.8);
             border: 1px solid var(--border-color);
             border-radius: 12px;
             padding: 12px;
         }
-        textarea {
+        textarea, input[type="text"] {
             width: 100%;
-            height: 190px;
             background: transparent;
             border: none;
             color: #cbd5e1;
             font-family: 'JetBrains Mono', monospace;
             font-size: 12.5px;
             outline: none;
-            resize: vertical;
-            line-height: 1.5;
         }
+        textarea { height: 160px; resize: vertical; line-height: 1.5; }
 
-        .editor-bottom {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 14px;
+        .input-box {
+            background: rgba(10, 12, 20, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
         }
-        .char-counter { font-size: 12px; color: var(--text-sub); font-family: 'JetBrains Mono', monospace; }
 
         .btn-submit {
+            width: 100%;
             background: linear-gradient(135deg, #ff5722, #e64a19);
             color: #ffffff;
             border: none;
             border-radius: 12px;
-            padding: 11px 22px;
+            padding: 12px;
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             box-shadow: 0 4px 18px var(--accent-glow);
             transition: all 0.25s;
         }
-        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 22px var(--accent-glow); }
+        .btn-submit:hover { transform: translateY(-2px); }
 
         .result-box {
             display: none;
             margin-top: 24px;
             padding-top: 20px;
             border-top: 1px dashed rgba(255, 255, 255, 0.12);
-            animation: fadeIn 0.4s ease-out forwards;
         }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .status-badge {
-            color: var(--green-code);
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 14px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .copy-input-flex { display: flex; gap: 8px; }
-        .input-read {
-            background: rgba(8, 9, 15, 0.9) !important;
-            color: var(--text-sub) !important;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            width: 100%;
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 10px 12px;
-            outline: none;
-        }
-        
-        .btn-copy-small {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid var(--border-color);
-            color: #f1f5f9;
-            padding: 0 14px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .btn-copy-small:hover { background: rgba(255, 255, 255, 0.15); }
 
         .code-display {
             background: rgba(8, 9, 15, 0.9);
@@ -262,34 +225,7 @@ const htmlContent = `
             color: var(--green-code);
             font-family: 'JetBrains Mono', monospace;
             font-size: 11.5px;
-            line-height: 1.5;
             word-break: break-all;
-            margin-bottom: 12px;
-        }
-
-        .btn-copy-main {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            padding: 11px;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 12.5px;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-bottom: 16px;
-        }
-        .btn-copy-main:hover { background: rgba(255, 255, 255, 0.12); }
-
-        .info-note {
-            font-size: 11px;
-            color: var(--text-sub);
-            line-height: 1.6;
-            background: rgba(255, 255, 255, 0.02);
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.03);
         }
     </style>
 </head>
@@ -298,82 +234,56 @@ const htmlContent = `
 <div class="main-card">
     <div class="brand-header">
         <div class="brand-title">SOLARIS RUNNER</div>
-        <div class="brand-sub">Secure Executable Script Engine</div>
+        <div class="brand-sub">Script Vault & Verification Portal</div>
     </div>
 
+    <!-- Verification Section -->
+    <div class="form-group" style="border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 18px;">
+        <span class="label-title">MEMBER VERIFICATION (DISCORD ID)</span>
+        <div class="input-box">
+            <input type="text" id="discordIdInput" placeholder="Enter Discord ID (e.g. 123456789012345678)">
+        </div>
+        <button class="btn-submit" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);" onclick="submitVerify()">✅ Claim Role / Verify</button>
+    </div>
+
+    <!-- Script Converter Section -->
     <div class="form-group">
-        <div class="editor-top">
-            <span class="label-title" style="margin:0;">CODE (LUA / TEXT)</span>
-            <div class="btn-mini-group">
-                <button class="btn-mini" onclick="document.getElementById('fileInput').click()">📁 Upload File</button>
-                <button class="btn-mini" onclick="clearCode()">🧹 Clear</button>
-            </div>
-        </div>
-
-        <input type="file" id="fileInput" accept=".lua,.txt" style="display:none;" onchange="handleFile(this)">
-
+        <span class="label-title">SCRIPT CONVERTER</span>
         <div class="editor-wrapper">
-            <textarea id="rawCode" placeholder="-- Paste your Lua script here..." oninput="updateCount()"></textarea>
+            <textarea id="rawCode" placeholder="-- Paste Lua script here..."></textarea>
         </div>
-
-        <div class="editor-bottom">
-            <span class="char-counter" id="charCount">0 characters</span>
-            <button class="btn-submit" onclick="createRaw()">⚡ Convert Script</button>
-        </div>
+        <button class="btn-submit" style="margin-top: 12px;" onclick="createRaw()">⚡ Convert Script</button>
     </div>
 
     <div class="result-box" id="resultArea">
-        <div class="status-badge">
-            ✔ Raw ready — Browsers will receive 403
-        </div>
-
-        <div class="form-group">
-            <span class="label-title">RAW URL</span>
-            <div class="copy-input-flex">
-                <input type="text" id="rawUrl" class="input-read" readonly>
-                <button class="btn-copy-small" onclick="copyText('rawUrl', this)">Copy</button>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <span class="label-title">LOADSTRING (ROBLOX)</span>
-            <div class="code-display" id="loadstringBox"></div>
-        </div>
-
-        <button class="btn-copy-main" id="copyLoadstringBtn" onclick="copyText('loadstringBox', this, true)">📋 Copy Loadstring</button>
-
-        <div class="info-note">
-            <strong>How the block works:</strong> System checks User-Agent + Sec-Fetch headers. Modern browsers receive 403 Forbidden, while Roblox executors retrieve full code cleanly.
-        </div>
+        <span class="label-title">LOADSTRING</span>
+        <div class="code-display" id="loadstringBox"></div>
     </div>
 </div>
 
 <script>
-function updateCount() {
-    const len = document.getElementById('rawCode').value.length;
-    document.getElementById('charCount').innerText = len + ' characters';
-}
+async function submitVerify() {
+    const discordId = document.getElementById('discordIdInput').value.trim();
+    if (!discordId) return alert('Please enter a valid Discord ID.');
 
-function clearCode() {
-    document.getElementById('rawCode').value = '';
-    updateCount();
-}
+    const res = await fetch('/api/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ discordId })
+    });
 
-function handleFile(input) {
-    const file = input.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('rawCode').value = e.target.result;
-            updateCount();
-        };
-        reader.readAsText(file);
+    const data = await res.json();
+    if (res.ok) {
+        alert('Verification logged successfully!');
+        document.getElementById('discordIdInput').value = '';
+    } else {
+        alert(data.error);
     }
 }
 
 async function createRaw() {
     const code = document.getElementById('rawCode').value.trim();
-    if (!code) return alert('Please enter or paste your Lua script first.');
+    if (!code) return alert('Please enter code.');
 
     const res = await fetch('/api/save-script', {
         method: 'POST',
@@ -384,26 +294,9 @@ async function createRaw() {
     const data = await res.json();
     if (res.ok) {
         const rawLink = window.location.origin + '/raw/' + data.id;
-        const loadstringText = 'loadstring(game:HttpGet("' + rawLink + '"))()';
-
-        document.getElementById('rawUrl').value = rawLink;
-        document.getElementById('loadstringBox').innerText = loadstringText;
-        
-        const resultArea = document.getElementById('resultArea');
-        resultArea.style.display = 'block';
-        resultArea.scrollIntoView({ behavior: 'smooth' });
-    } else {
-        alert(data.error);
+        document.getElementById('loadstringBox').innerText = 'loadstring(game:HttpGet("' + rawLink + '"))()';
+        document.getElementById('resultArea').style.display = 'block';
     }
-}
-
-function copyText(elementId, btn, isDiv = false) {
-    const text = isDiv ? document.getElementById(elementId).innerText : document.getElementById(elementId).value;
-    navigator.clipboard.writeText(text).then(() => {
-        const oldText = btn.innerText;
-        btn.innerText = 'Copied!';
-        setTimeout(() => { btn.innerText = oldText; }, 2000);
-    });
 }
 </script>
 
@@ -411,133 +304,42 @@ function copyText(elementId, btn, isDiv = false) {
 </html>
 `;
 
-// Beautiful 403 Page HTML
-const forbiddenPageHtml = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>403 Forbidden - SOLARIS RUNNER</title>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #0b0c10;
-            --card-bg: rgba(20, 22, 34, 0.9);
-            --accent-main: #ff5722;
-            --accent-glow: rgba(255, 87, 34, 0.35);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --text-main: #f1f5f9;
-            --text-sub: #94a3b8;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Kanit', sans-serif; }
-
-        body {
-            background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(circle at 50% 30%, rgba(255, 87, 34, 0.12) 0%, transparent 60%);
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .error-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            width: 100%;
-            max-width: 440px;
-            padding: 40px 28px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-        }
-
-        .status-code {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 72px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #ff5722, #ff8a65);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            line-height: 1;
-            margin-bottom: 12px;
-            letter-spacing: 2px;
-        }
-
-        .title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: var(--text-main);
-        }
-
-        .description {
-            font-size: 13px;
-            color: var(--text-sub);
-            line-height: 1.6;
-            margin-bottom: 28px;
-        }
-
-        .btn-home {
-            display: inline-block;
-            background: linear-gradient(135deg, #ff5722, #e64a19);
-            color: #ffffff;
-            text-decoration: none;
-            padding: 12px 28px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 600;
-            box-shadow: 0 4px 18px var(--accent-glow);
-            transition: all 0.25s;
-        }
-
-        .btn-home:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 22px var(--accent-glow);
-        }
-    </style>
-</head>
-<body>
-
-<div class="error-card">
-    <div class="status-code">403</div>
-    <div class="title">Access Denied</div>
-    <div class="description">
-        Direct web browser access to this raw script is blocked to protect execution integrity. Please use an executor or return to the main dashboard.
-    </div>
-    <a href="/" class="btn-home">Return to Home</a>
-</div>
-
-</body>
-</html>
-`;
-
 app.get('/', (req, res) => res.send(htmlContent));
+
+// API Endpoint to Record Verification and Log to Webhook
+app.post('/api/verify', (req, res) => {
+    const { discordId } = req.body;
+    if (!discordId || !/^\d{17,20}$/.test(discordId)) {
+        return res.status(400).json({ error: 'Invalid Discord ID format' });
+    }
+
+    if (!database.users.includes(discordId)) {
+        database.users.push(discordId);
+        saveData();
+    }
+
+    sendVerificationLog(discordId);
+    res.json({ success: true, message: 'Logged to Discord' });
+});
 
 app.post('/api/save-script', (req, res) => {
     const { code } = req.body;
     if (!code || !code.trim()) return res.status(400).json({ error: 'Code cannot be empty' });
 
     let id = generateSecureId(22);
-    while (database[id]) {
+    while (database.scripts[id]) {
         id = generateSecureId(22);
     }
 
-    database[id] = { code };
+    database.scripts[id] = { code };
     saveData();
 
     res.json({ id });
 });
 
-// Serve script with 403 block for web browsers
 app.get('/raw/:id', (req, res) => {
     const id = req.params.id;
-    const script = database[id];
+    const script = database.scripts[id];
 
     if (!script) return res.status(404).send('Not Found');
 
@@ -551,7 +353,7 @@ app.get('/raw/:id', (req, res) => {
                       (userAgent.includes('mozilla') && !userAgent.includes('roblox'));
 
     if (isBrowser) {
-        return res.status(403).send(forbiddenPageHtml);
+        return res.status(403).send("403 Forbidden");
     }
 
     res.type('text/plain; charset=utf-8');
@@ -561,5 +363,6 @@ app.get('/raw/:id', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log('SOLARIS RUNNER server active on port ' + PORT);
-    sendDiscordStatus(); // Send Online Status to Discord Webhook
+    sendDiscordStatus();
 });
+        
