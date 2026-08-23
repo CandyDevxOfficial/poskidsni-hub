@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const app = express();
 
 app.use(express.json());
@@ -12,345 +13,369 @@ const DB_FILE = path.join(DATA_DIR, 'db.json');
 
 let database = {};
 if (fs.existsSync(DB_FILE)) {
-    try {
-        database = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-    } catch (e) {
-        database = {};
-    }
+    try { database = JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); } catch (e) { database = {}; }
 }
 
 function saveData() {
     fs.writeFileSync(DB_FILE, JSON.stringify(database, null, 2));
 }
 
-// ฟังก์ชันแปลงโค้ดแบบเซฟ ปลอดภัย และรันติดแน่นอน
-function safeObfuscate(code, watermark = true) {
-    let result = code;
-    if (watermark) {
-        result = `-- [ SOLARIS HUB PROTECTED ]\n-- Generated at: ${new Date().toLocaleString()}\n\n` + result;
+// ฟังก์ชันสุ่ม Secure Unique ID ความยาว 22 ตัวอักษร เช่น iWig0QoLQyNePrCUajPE6JK
+function generateSecureId(length = 22) {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const bytes = crypto.randomBytes(length);
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars[bytes[i] % chars.length];
     }
-    const bytes = Buffer.from(result).toJSON().data;
-    const hexArray = bytes.map(b => '\\' + b).join('');
-    
-    return `local _S = "${hexArray}"
-local _D = function(s) return s:gsub('\\\\(%d+)', function(n) return string.char(tonumber(n)) end) end
-local _F = loadstring(_D(_S))
-if _F then _F() end`;
+    return result;
 }
 
 const htmlContent = `
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOLARIS HUB - Luau Security & Script Manager</title>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Kanit:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <title>LuauForge - Lock System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #ff416c;
-            --secondary: #8b5cf6;
-            --bg-dark: #0a0c14;
-            --card-bg: rgba(18, 20, 32, 0.9);
-            --border: rgba(255, 255, 255, 0.1);
-        }
-        * { box-sizing: border-box; font-family: 'Kanit', sans-serif; margin: 0; padding: 0; }
-        body { 
-            background: var(--bg-dark); 
-            background-image: radial-gradient(circle at 50% -10%, #2e1065, var(--bg-dark) 80%);
-            color: #f3f4f6; 
-            padding: 24px 12px; 
-            min-height: 100vh;
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-        }
-        .container { 
-            background: var(--card-bg); 
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border); 
-            border-radius: 20px; 
-            padding: 28px 24px; 
-            width: 100%; 
-            max-width: 520px; 
-            box-shadow: 0 20px 60px rgba(0,0,0,0.8); 
-        }
-        .header { text-align: center; margin-bottom: 20px; }
-        .logo-title {
-            font-size: 28px; 
-            font-weight: 700; 
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 1px;
-        }
-        .subtitle { font-size: 13px; color: #9ca3af; }
-
-        .nav-tabs {
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body {
+            background-color: #0b0c10;
+            color: #94a3b8;
             display: flex;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 4px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            margin-bottom: 20px;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
         }
-        .tab-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            background: transparent;
-            color: #9ca3af;
-            font-weight: 600;
-            font-size: 13px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
+        .container {
+            background: #11121c;
+            border: 1px solid #1e202e;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 440px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
         }
-        .tab-btn.active {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            box-shadow: 0 4px 12px rgba(255, 65, 108, 0.3);
+        .label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
         }
-
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-size: 13px; color: #d1d5db; margin-bottom: 8px; }
+        .form-group { margin-bottom: 20px; }
         
-        textarea { 
-            width: 100%; 
-            background: rgba(10, 12, 20, 0.95); 
-            color: #a7f3d0; 
-            border: 1px solid var(--border); 
-            border-radius: 12px; 
-            padding: 14px; 
-            font-size: 12px; 
-            font-family: 'Fira Code', monospace;
-            outline: none;
-            height: 200px; 
-            resize: vertical; 
-            transition: border-color 0.3s;
-        }
-        textarea:focus { border-color: var(--primary); }
-
-        .options-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 16px;
-            background: rgba(255,255,255,0.03);
-            padding: 12px;
+        input[type="text"] {
+            width: 100%;
+            background: #0d0e17;
+            border: 1px solid #1e202f;
             border-radius: 10px;
-            border: 1px solid var(--border);
+            padding: 12px 14px;
+            color: #f1f5f9;
+            font-size: 13px;
+            outline: none;
         }
-        .option-item {
+        input[type="text"]::placeholder { color: #334155; }
+        input[type="text"]:focus { border-color: #3b82f6; }
+
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .editor-actions { display: flex; gap: 8px; }
+        .btn-sub {
+            background: #181926;
+            border: 1px solid #232538;
+            color: #cbd5e1;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .btn-sub:hover { background: #222436; }
+
+        .editor-container {
+            position: relative;
+            background: #0a0b12;
+            border: 1px solid #1c1e2d;
+            border-radius: 12px;
+            padding: 14px;
+        }
+        textarea {
+            width: 100%;
+            height: 180px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            outline: none;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .editor-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+        }
+        .char-count { font-size: 12px; color: #475569; }
+
+        .btn-submit {
+            background: #ff5722;
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(255, 87, 34, 0.3);
+            transition: all 0.2s;
+        }
+        .btn-submit:hover { background: #f4511e; transform: translateY(-1px); }
+
+        .result-section { display: none; }
+        .status-header {
+            color: #22c55e;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 16px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 12px;
-            color: #d1d5db;
+            gap: 6px;
         }
-
-        .btn-action-group {
+        .input-with-btn {
             display: flex;
             gap: 8px;
-            margin-top: 8px;
         }
-        .btn-mini {
-            padding: 6px 12px;
-            font-size: 11px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid var(--border);
-            color: #d1d5db;
-            border-radius: 6px;
+        .input-readonly {
+            background: #090a10 !important;
+            color: #64748b !important;
+            border-color: #1a1c2a !important;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+        .btn-copy {
+            background: #1a1c2b;
+            border: 1px solid #282a3f;
+            color: #e2e8f0;
+            padding: 0 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 12px;
             cursor: pointer;
         }
-        .btn-mini:hover { background: rgba(255,255,255,0.15); }
+        .btn-copy:hover { background: #25283d; }
 
-        .btn { 
-            width: 100%; 
-            padding: 14px; 
-            border: none; 
-            color: white; 
-            font-weight: 700; 
-            border-radius: 12px; 
-            cursor: pointer; 
-            font-size: 14px; 
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            box-shadow: 0 4px 20px rgba(255, 65, 108, 0.25);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(255, 65, 108, 0.4); }
-
-        .result-box { 
-            word-break: break-all; 
-            font-family: 'Fira Code', monospace; 
-            font-size: 12px; 
-            color: #38bdf8; 
-            background: rgba(0, 0, 0, 0.4); 
-            padding: 12px; 
-            border-radius: 10px; 
-            border: 1px dashed rgba(56, 189, 248, 0.3); 
-            margin-top: 8px;
-        }
-
-        .alert-box {
-            padding: 10px;
-            border-radius: 8px;
+        .loadstring-box {
+            background: #090a10;
+            border: 1px solid #171926;
+            border-radius: 10px;
+            padding: 14px;
+            color: #22c55e;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 12px;
+            line-height: 1.6;
+            word-break: break-all;
             margin-bottom: 12px;
-            display: none;
-            text-align: center;
-            color: #f87171; 
-            background: rgba(239, 68, 68, 0.1); 
-            border: 1px solid rgba(239, 68, 68, 0.2);
         }
+
+        .btn-full-copy {
+            width: 100%;
+            background: #1a1c2b;
+            border: 1px solid #282a3f;
+            color: #cbd5e1;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .btn-full-copy:hover { background: #24273c; }
+
+        .info-footer {
+            border-top: 1px solid #181a27;
+            padding-top: 16px;
+            font-size: 11px;
+            color: #475569;
+            line-height: 1.6;
+        }
+        .info-footer strong { color: #64748b; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1 class="logo-title">SOLARIS HUB</h1>
-            <p class="subtitle">ระบบจัดการสคริปต์ & ป้องกันโค้ด Luau</p>
-        </div>
 
-        <div class="nav-tabs">
-            <button class="tab-btn active" onclick="setMode('raw')">⚡ สร้าง Loadstring (ปกติ)</button>
-            <button class="tab-btn" onclick="setMode('obf')">🔒 ล็อกโค้ด (Obfuscate)</button>
+<div class="container">
+    <div id="formSection">
+        <div class="form-group">
+            <span class="label">SCRIPT NAME (OPTIONAL)</span>
+            <input type="text" id="scriptName" placeholder="e.g. auto-farm, key-system...">
         </div>
-
-        <div id="alertMsg" class="alert-box"></div>
 
         <div class="form-group">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <label style="margin:0;">📜 วางโค้ด Lua ของคุณ</label>
-                <div class="btn-action-group" style="margin:0;">
-                    <button class="btn-mini" onclick="copyInputCode()">📋 คัดลอก</button>
-                    <button class="btn-mini" onclick="clearInputCode()">🧹 ล้างช่อง</button>
+            <div class="editor-header">
+                <span class="label" style="margin:0;">CODE (LUA / TEXT)</span>
+                <div class="editor-actions">
+                    <button class="btn-sub" onclick="document.getElementById('fileInput').click()">📁 Upload .lua / .txt</button>
+                    <button class="btn-sub" onclick="clearCode()">Clear</button>
                 </div>
             </div>
-            <textarea id="rawCode" placeholder="-- วางสคริปต์ Lua ที่นี่..."></textarea>
-        </div>
+            
+            <input type="file" id="fileInput" accept=".lua,.txt" style="display:none;" onchange="handleFile(this)">
 
-        <div class="options-grid" id="optionsBox" style="display: none;">
-            <div class="option-item">
-                <input type="checkbox" id="optWatermark" checked>
-                <label for="optWatermark">ใส่ SOLARIS Watermark</label>
+            <div class="editor-container">
+                <textarea id="rawCode" placeholder="-- paste your code here or drop a file&#10;print('hello from LuauForge-Lock')" oninput="updateCount()"></textarea>
             </div>
-            <div class="option-item">
-                <input type="checkbox" id="optEncode" checked>
-                <label for="optEncode">บีบอัดโค้ด Hex</label>
+
+            <div class="editor-footer">
+                <span class="char-count" id="charCount">0 characters</span>
+                <button class="btn-submit" onclick="createRaw()">Create Secure Raw</button>
             </div>
-        </div>
-
-        <button class="btn" onclick="processScript()">⚡ แปลงสคริปต์ทันที</button>
-
-        <div id="resultArea" style="display: none; margin-top: 16px;">
-            <label style="font-size: 12px; color: #9ca3af;">นำโค้ดไปรันใน Roblox:</label>
-            <div class="result-box" id="scriptLink"></div>
-            <button class="btn" style="margin-top: 10px; background: #10b981;" id="copyBtn" onclick="copyResult()">📋 คัดลอกลิงก์ Loadstring</button>
         </div>
     </div>
 
-    <script>
-        let currentMode = 'raw';
+    <div class="result-section" id="resultSection">
+        <div class="status-header">
+            ✔ Raw ready — Browsers will receive 403
+        </div>
 
-        function setMode(mode) {
-            currentMode = mode;
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+        <div class="form-group">
+            <span class="label">RAW URL</span>
+            <div class="input-with-btn">
+                <input type="text" id="rawUrl" class="input-readonly" readonly>
+                <button class="btn-copy" onclick="copyText('rawUrl', this)">Copy</button>
+            </div>
+        </div>
 
-            const optionsBox = document.getElementById('optionsBox');
-            optionsBox.style.display = mode === 'obf' ? 'grid' : 'none';
-        }
+        <div class="form-group">
+            <span class="label">LOADSTRING (ROBLOX)</span>
+            <div class="loadstring-box" id="loadstringBox"></div>
+        </div>
 
-        function showAlert(msg) {
-            const el = document.getElementById('alertMsg');
-            el.innerText = '⚠️ ' + msg;
-            el.style.display = 'block';
-        }
+        <button class="btn-full-copy" id="copyLoadstringBtn" onclick="copyText('loadstringBox', this, true)">Copy Loadstring</button>
 
-        function copyInputCode() {
-            const code = document.getElementById('rawCode').value;
-            if(!code.trim()) return showAlert('ไม่มีโค้ดในช่องวาง');
-            navigator.clipboard.writeText(code).then(() => alert('คัดลอกโค้ดเรียบร้อย!'));
-        }
+        <div class="info-footer">
+            <strong>How the block works:</strong> Edge Function checks User-Agent + Sec-Fetch-* + Accept headers.<br>
+            Modern browsers send Sec-Fetch → 403. Roblox HttpGet / most executors do not → code is returned.
+        </div>
+    </div>
+</div>
 
-        function clearInputCode() {
-            document.getElementById('rawCode').value = '';
-            document.getElementById('resultArea').style.display = 'none';
-        }
+<script>
+function updateCount() {
+    const len = document.getElementById('rawCode').value.length;
+    document.getElementById('charCount').innerText = len + ' characters';
+}
 
-        async function processScript() {
-            document.getElementById('alertMsg').style.display = 'none';
-            const code = document.getElementById('rawCode').value.trim();
+function clearCode() {
+    document.getElementById('rawCode').value = '';
+    updateCount();
+}
 
-            if(!code) return showAlert('โปรดวางโค้ด Lua ก่อนกดทำรายการ');
+function handleFile(input) {
+    const file = input.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('rawCode').value = e.target.result;
+            updateCount();
+        };
+        reader.readAsText(file);
+    }
+}
 
-            const isObfuscate = currentMode === 'obf';
-            const useWatermark = document.getElementById('optWatermark').checked;
+async function createRaw() {
+    const code = document.getElementById('rawCode').value.trim();
+    if (!code) return alert('Please enter code first');
 
-            const res = await fetch('/api/save-script', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code, isObfuscate, useWatermark })
-            });
+    const res = await fetch('/api/save-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+    });
 
-            const data = await res.json();
-            if(!res.ok) {
-                showAlert(data.error);
-            } else {
-                const loadstringUrl = 'loadstring(game:HttpGet("' + window.location.origin + '/Scripts?Id=' + data.id + '"))()';
-                document.getElementById('scriptLink').innerText = loadstringUrl;
-                document.getElementById('resultArea').style.display = 'block';
-            }
-        }
+    const data = await res.json();
+    if (res.ok) {
+        const rawLink = window.location.origin + '/raw/' + data.id;
+        const loadstringText = 'loadstring(game:HttpGet("' + rawLink + '"))()';
 
-        function copyResult() {
-            const text = document.getElementById('scriptLink').innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                const btn = document.getElementById('copyBtn');
-                btn.innerText = '✅ คัดลอกลิงก์เรียบร้อย!';
-                setTimeout(() => { btn.innerText = '📋 คัดลอกลิงก์ Loadstring'; }, 2000);
-            });
-        }
-    </script>
+        document.getElementById('rawUrl').value = rawLink;
+        document.getElementById('loadstringBox').innerText = loadstringText;
+        
+        document.getElementById('formSection').style.display = 'none';
+        document.getElementById('resultSection').style.display = 'block';
+    } else {
+        alert(data.error);
+    }
+}
+
+function copyText(elementId, btn, isDiv = false) {
+    const text = isDiv ? document.getElementById(elementId).innerText : document.getElementById(elementId).value;
+    navigator.clipboard.writeText(text).then(() => {
+        const oldText = btn.innerText;
+        btn.innerText = 'Copied!';
+        setTimeout(() => { btn.innerText = oldText; }, 2000);
+    });
+}
+</script>
+
 </body>
 </html>
 `;
 
 app.get('/', (req, res) => res.send(htmlContent));
 
+// API บันทึกโค้ดและสร้าง Unique ID 22 หลัก
 app.post('/api/save-script', (req, res) => {
-    const { code, isObfuscate, useWatermark } = req.body;
-    
-    if (!code || !code.trim()) {
-        return res.status(400).json({ error: 'กรุณากรอกโค้ด Lua' });
+    const { code } = req.body;
+    if (!code || !code.trim()) return res.status(400).json({ error: 'Code cannot be empty' });
+
+    let id = generateSecureId(22);
+    while (database[id]) {
+        id = generateSecureId(22);
     }
 
-    const scriptId = Math.floor(1000000000000 + Math.random() * 9000000000000).toString();
-    
-    let finalCode = code;
-    if (isObfuscate) {
-        finalCode = safeObfuscate(code, useWatermark);
-    }
-
-    database[scriptId] = { code: finalCode };
+    database[id] = { code };
     saveData();
 
-    res.json({ id: scriptId });
+    res.json({ id });
 });
 
-app.get('/Scripts', (req, res) => {
-    const scriptId = req.query.Id;
-    const scriptInfo = database[scriptId];
+// ดึงสคริปต์ไปรัน - ตรวจจับ Header สกัดกั้น Web Browser (ส่ง 403 Forbidden)
+app.get('/raw/:id', (req, res) => {
+    const id = req.params.id;
+    const script = database[id];
 
-    if (!scriptId || !scriptInfo) {
-        return res.status(404).send('-- Script Not Found');
+    if (!script) return res.status(404).send('Not Found');
+
+    const userAgent = (req.headers['user-agent'] || '').toLowerCase();
+    const secFetchDest = req.headers['sec-fetch-dest'];
+    const secFetchMode = req.headers['sec-fetch-mode'];
+    const acceptHeader = (req.headers['accept'] || '').toLowerCase();
+
+    // บล็อกถ้าคำขอมาจาก Browser
+    const isBrowser = secFetchDest || secFetchMode || 
+                      acceptHeader.includes('text/html') || 
+                      (userAgent.includes('mozilla') && !userAgent.includes('roblox'));
+
+    if (isBrowser) {
+        return res.status(403).send('403 Forbidden - Access denied for Web Browsers');
     }
 
     res.type('text/plain; charset=utf-8');
-    res.send(scriptInfo.code);
+    res.send(script.code);
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log('SOLARIS HUB running on port ' + PORT));
-    
+app.listen(PORT, () => console.log('Server active on port ' + PORT));
