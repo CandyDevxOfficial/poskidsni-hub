@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOLARIS RUNNER - Script Vault</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(20, 22, 34, 0.9);
+            --accent-main: #ff5722;
+            --accent-glow: rgba(255, 87, 34, 0.35);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #f1f5f9;
+            --text-sub: #64748b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Kanit', sans-serif; }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 24px 12px;
+        }
+
+        .main-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 480px;
+            padding: 28px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+        }
+
+        .brand-header { text-align: center; margin-bottom: 22px; }
+        .brand-title {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ff5722, #ff8a65);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .brand-sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+
+        .editor-wrapper {
+            background: rgba(10, 12, 20, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
+        }
+        textarea {
+            width: 100%;
+            height: 180px;
+            background: transparent;
+            border: none;
+            color: #cbd5e1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            outline: none;
+            resize: vertical;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #ff5722, #e64a19);
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            padding: 11px 22px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 14px;
+            box-shadow: 0 4px 18px var(--accent-glow);
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-card">
+    <div class="brand-header">
+        <div class="brand-title">SOLARIS RUNNER</div>
+        <div class="brand-sub">Secure Executable Script Engine</div>
+    </div>
+
+    <div class="editor-wrapper">
+        <textarea id="rawCode" placeholder="-- Paste your Lua script here..."></textarea>
+    </div>
+
+    <button class="btn-submit" onclick="alert('ระบบหน้าเว็บ SOLARIS RUNNER บน Netlify พร้อมใช้งานแล้ว!')">⚡ Convert Script</button>
+</div>
+
+</body>
+  </html>
+  
