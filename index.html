@@ -32,7 +32,7 @@
             padding: 24px 12px;
         }
 
-        /* 403 Forbidden Screen */
+        /* 403 Forbidden View */
         #forbiddenView {
             display: none;
             text-align: center;
@@ -50,7 +50,7 @@
         .desc-403 { font-size: 13px; color: #94a3b8; margin-bottom: 28px; }
         .btn-403 { background: #ff5722; color: #fff; padding: 12px 28px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 13px; cursor: pointer; border: none; }
 
-        /* Main UI Screen */
+        /* Main App View */
         .main-card {
             background: var(--card-bg);
             backdrop-filter: blur(16px);
@@ -151,7 +151,37 @@
             color: var(--green-code);
             font-size: 12px;
             font-weight: 600;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
+        }
+
+        .raw-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+        .raw-input-box {
+            flex: 1;
+            background: rgba(10, 12, 20, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 12px;
+            color: #cbd5e1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            outline: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .btn-copy-sm {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0 16px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
         }
 
         .code-display {
@@ -176,12 +206,22 @@
             font-weight: 600;
             font-size: 12.5px;
             cursor: pointer;
+            margin-bottom: 20px;
         }
+
+        .info-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 14px;
+            font-size: 11.5px;
+            color: #64748b;
+            line-height: 1.6;
+        }
+        .info-footer strong { color: #94a3b8; }
     </style>
 </head>
 <body>
 
-<!-- หน้าหลัก SOLARIS RUNNER -->
+<!-- หน้าหลัก UI -->
 <div class="main-card" id="mainView">
     <div class="brand-header">
         <div class="brand-title">SOLARIS RUNNER</div>
@@ -212,12 +252,20 @@
     <div class="result-box" id="resultArea">
         <div class="status-badge">✔ Raw ready — Browsers will receive 403</div>
 
-        <div class="form-group">
-            <span class="label-title">LOADSTRING (ROBLOX)</span>
-            <div class="code-display" id="loadstringBox"></div>
+        <span class="label-title">RAW URL</span>
+        <div class="raw-input-group">
+            <input type="text" class="raw-input-box" id="rawUrlBox" readonly>
+            <button class="btn-copy-sm" id="copyRawBtn" onclick="copyRawUrl()">Copy</button>
         </div>
 
-        <button class="btn-copy-main" id="copyBtn" onclick="copyText()">📋 Copy Loadstring</button>
+        <span class="label-title">LOADSTRING (ROBLOX)</span>
+        <div class="code-display" id="loadstringBox"></div>
+        <button class="btn-copy-main" id="copyBtn" onclick="copyLoadstring()">📋 Copy Loadstring</button>
+
+        <div class="info-footer">
+            <strong>How the block works:</strong> Security Layer checks request origin.<br>
+            Modern web browsers trigger 403 Forbidden protection while HTTP Client Execution bypasses safely.
+        </div>
     </div>
 </div>
 
@@ -232,14 +280,13 @@
 </div>
 
 <script>
-// ฐานข้อมูลจำลองในเครื่อง (LocalStorage)
 let database = JSON.parse(localStorage.getItem('solaris_db')) || { scripts: {} };
 
 function saveData() {
     localStorage.setItem('solaris_db', JSON.stringify(database));
 }
 
-// ฟังก์ชันสร้าง ID สุ่ม 22 หลัก
+// สร้าง ID สุ่ม 22 หลัก
 function generateSecureId(length = 22) {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
@@ -249,23 +296,31 @@ function generateSecureId(length = 22) {
     return result;
 }
 
-// ระบบ Router ตรวจจับการเข้าใช้งานหน้า /raw/:id
+// ตรวจจับเส้นทาง #/raw/:id เพื่อจำลองการบล็อก Browser
 window.onload = function() {
+    checkRoute();
+};
+
+window.onhashchange = function() {
+    checkRoute();
+};
+
+function checkRoute() {
     const hash = window.location.hash;
     if (hash.startsWith('#/raw/')) {
         const id = hash.replace('#/raw/', '');
-        const script = database.scripts[id];
-
-        if (script) {
-            // บล็อกถ้าเปิดผ่าน Browser และแสดงหน้า 403 Forbidden
+        if (database.scripts[id]) {
             document.getElementById('mainView').style.display = 'none';
             document.getElementById('forbiddenView').style.display = 'block';
         } else {
             alert('Script Not Found');
             goHome();
         }
+    } else {
+        document.getElementById('forbiddenView').style.display = 'none';
+        document.getElementById('mainView').style.display = 'block';
     }
-};
+}
 
 function updateCount() {
     const len = document.getElementById('rawCode').value.length;
@@ -293,17 +348,25 @@ function createRaw() {
         id = generateSecureId(22);
     }
 
-    // บันทึกสคริปต์
-    database.scripts[id] = { code: code };
+    database.scripts[id] = { code };
     saveData();
 
-    // สร้างลิงก์ Raw
     const rawLink = window.location.origin + window.location.pathname + '#/raw/' + id;
+    document.getElementById('rawUrlBox').value = rawLink;
     document.getElementById('loadstringBox').innerText = 'loadstring(game:HttpGet("' + rawLink + '"))()';
     document.getElementById('resultArea').style.display = 'block';
 }
 
-function copyText() {
+function copyRawUrl() {
+    const text = document.getElementById('rawUrlBox').value;
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyRawBtn');
+        btn.innerText = 'Copied!';
+        setTimeout(() => { btn.innerText = 'Copy'; }, 2000);
+    });
+}
+
+function copyLoadstring() {
     const text = document.getElementById('loadstringBox').innerText;
     navigator.clipboard.writeText(text).then(() => {
         const btn = document.getElementById('copyBtn');
@@ -320,5 +383,5 @@ function goHome() {
 </script>
 
 </body>
-                                                   </html>
-                
+                                                         </html>
+    
