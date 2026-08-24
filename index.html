@@ -1,123 +1,324 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOLARIS RUNNER</title>
+    <title>SOLARIS RUNNER - Script Vault</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(20, 22, 34, 0.9);
+            --accent-main: #ff5722;
+            --accent-glow: rgba(255, 87, 34, 0.35);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #f1f5f9;
+            --text-sub: #64748b;
+            --green-code: #22c55e;
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Kanit', sans-serif; }
+        
         body {
-            background-color: #0b0c10;
-            color: #ffffff;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255, 87, 34, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 40%);
+            color: var(--text-main);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: 24px 12px;
         }
-        .container {
-            background-color: #1f2833;
-            border: 1px solid #45a29e;
-            border-radius: 12px;
-            padding: 24px;
-            width: 100%;
-            max-width: 500px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+
+        /* 403 Forbidden Screen */
+        #forbiddenView {
+            display: none;
             text-align: center;
         }
-        h1 {
-            color: #ff5722;
-            font-size: 24px;
-            letter-spacing: 1.5px;
-            margin-bottom: 4px;
+        .card-403 {
+            background: rgba(20, 22, 34, 0.9);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 40px 28px;
+            border-radius: 20px;
+            max-width: 440px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
         }
-        p.subtitle {
-            color: #c5c6c7;
-            font-size: 13px;
-            margin-bottom: 20px;
+        .code-403 { font-size: 72px; font-weight: 700; color: #ff5722; font-family: 'JetBrains Mono', monospace; }
+        .title-403 { font-size: 20px; margin-bottom: 12px; }
+        .desc-403 { font-size: 13px; color: #94a3b8; margin-bottom: 28px; }
+        .btn-403 { background: #ff5722; color: #fff; padding: 12px 28px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 13px; cursor: pointer; border: none; }
+
+        /* Main UI Screen */
+        .main-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 480px;
+            padding: 28px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+        }
+
+        .brand-header { text-align: center; margin-bottom: 22px; }
+        .brand-title {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ff5722, #ff8a65);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .brand-sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+
+        .form-group { margin-bottom: 18px; }
+        .label-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #94a3b8;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .editor-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .btn-mini-group { display: flex; gap: 6px; }
+        .btn-mini {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: #cbd5e1;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .editor-wrapper {
+            background: rgba(10, 12, 20, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
         }
         textarea {
             width: 100%;
             height: 180px;
-            background-color: #0b0c10;
-            color: #66fcf1;
-            border: 1px solid #45a29e;
-            border-radius: 8px;
-            padding: 12px;
-            font-family: monospace;
-            font-size: 13px;
-            resize: none;
+            background: transparent;
+            border: none;
+            color: #cbd5e1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
             outline: none;
-            margin-bottom: 16px;
+            resize: vertical;
+            line-height: 1.5;
         }
-        button {
-            width: 100%;
-            background-color: #ff5722;
+
+        .editor-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 14px;
+        }
+        .char-counter { font-size: 12px; color: var(--text-sub); font-family: 'JetBrains Mono', monospace; }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #ff5722, #e64a19);
             color: #ffffff;
             border: none;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        button:hover {
-            background-color: #e64a19;
-        }
-        .status-msg {
-            margin-top: 14px;
+            border-radius: 12px;
+            padding: 11px 22px;
             font-size: 13px;
-            color: #66fcf1;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 18px var(--accent-glow);
+            transition: all 0.25s;
+        }
+
+        .result-box {
             display: none;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.12);
+        }
+
+        .status-badge {
+            color: var(--green-code);
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+
+        .code-display {
+            background: rgba(8, 9, 15, 0.9);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 10px;
+            padding: 12px;
+            color: var(--green-code);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11.5px;
+            word-break: break-all;
+            margin-bottom: 12px;
+        }
+
+        .btn-copy-main {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 11px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 12.5px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>SOLARIS RUNNER</h1>
-    <p class="subtitle">Secure Executable Script Engine</p>
-    
-    <textarea id="scriptInput" placeholder="วางสคริปต์ Lua ของคุณที่นี่..."></textarea>
-    
-    <button id="convertBtn" onclick="processScript()">⚡ Convert Script</button>
+<!-- หน้าหลัก SOLARIS RUNNER -->
+<div class="main-card" id="mainView">
+    <div class="brand-header">
+        <div class="brand-title">SOLARIS RUNNER</div>
+        <div class="brand-sub">Secure Executable Script Engine</div>
+    </div>
 
-    <div id="statusMsg" class="status-msg"></div>
+    <div class="form-group">
+        <div class="editor-top">
+            <span class="label-title" style="margin:0;">CODE (LUA / TEXT)</span>
+            <div class="btn-mini-group">
+                <button class="btn-mini" onclick="document.getElementById('fileInput').click()">📁 Upload File</button>
+                <button class="btn-mini" onclick="document.getElementById('rawCode').value=''; updateCount();">🧹 Clear</button>
+            </div>
+        </div>
+
+        <input type="file" id="fileInput" accept=".lua,.txt" style="display:none;" onchange="handleFile(this)">
+
+        <div class="editor-wrapper">
+            <textarea id="rawCode" placeholder="-- Paste your Lua script here..." oninput="updateCount()"></textarea>
+        </div>
+
+        <div class="editor-bottom">
+            <span class="char-counter" id="charCount">0 characters</span>
+            <button class="btn-submit" onclick="createRaw()">⚡ Convert Script</button>
+        </div>
+    </div>
+
+    <div class="result-box" id="resultArea">
+        <div class="status-badge">✔ Raw ready — Browsers will receive 403</div>
+
+        <div class="form-group">
+            <span class="label-title">LOADSTRING (ROBLOX)</span>
+            <div class="code-display" id="loadstringBox"></div>
+        </div>
+
+        <button class="btn-copy-main" id="copyBtn" onclick="copyText()">📋 Copy Loadstring</button>
+    </div>
+</div>
+
+<!-- หน้า 403 Forbidden -->
+<div id="forbiddenView">
+    <div class="card-403">
+        <div class="code-403">403</div>
+        <div class="title-403">Access Denied</div>
+        <div class="desc-403">Direct web browser access is blocked to protect script integrity.</div>
+        <button onclick="goHome()" class="btn-403">Return to Home</button>
+    </div>
 </div>
 
 <script>
-    function processScript() {
-        const input = document.getElementById('scriptInput').value.trim();
-        const status = document.getElementById('statusMsg');
+// ฐานข้อมูลจำลองในเครื่อง (LocalStorage)
+let database = JSON.parse(localStorage.getItem('solaris_db')) || { scripts: {} };
 
-        if (!input) {
-            status.style.color = '#ff4d4d';
-            status.innerText = '⚠️ กรุณาวางสคริปต์ก่อนทำการแปลง!';
-            status.style.display = 'block';
-            return;
-        }
+function saveData() {
+    localStorage.setItem('solaris_db', JSON.stringify(database));
+}
 
-        // ตัวอย่างการครอบสคริปต์เพื่อนำไปใช้งาน
-        const converted = `-- SOLARIS RUNNER EXECUTOR LOAD\nloadstring([[${input}]])()`;
-        
-        // คัดลอกผลลัพธ์ลง Clipboard
-        navigator.clipboard.writeText(converted).then(() => {
-            status.style.color = '#66fcf1';
-            status.innerText = '✅ แปลงสคริปต์และคัดลอกลง Clipboard เรียบร้อยแล้ว!';
-            status.style.display = 'block';
-        }).catch(() => {
-            status.style.color = '#66fcf1';
-            status.innerText = '✅ แปลงสคริปต์สำเร็จ!';
-            status.style.display = 'block';
-        });
+// ฟังก์ชันสร้าง ID สุ่ม 22 หลัก
+function generateSecureId(length = 22) {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
+    return result;
+}
+
+// ระบบ Router ตรวจจับการเข้าใช้งานหน้า /raw/:id
+window.onload = function() {
+    const hash = window.location.hash;
+    if (hash.startsWith('#/raw/')) {
+        const id = hash.replace('#/raw/', '');
+        const script = database.scripts[id];
+
+        if (script) {
+            // บล็อกถ้าเปิดผ่าน Browser และแสดงหน้า 403 Forbidden
+            document.getElementById('mainView').style.display = 'none';
+            document.getElementById('forbiddenView').style.display = 'block';
+        } else {
+            alert('Script Not Found');
+            goHome();
+        }
+    }
+};
+
+function updateCount() {
+    const len = document.getElementById('rawCode').value.length;
+    document.getElementById('charCount').innerText = len + ' characters';
+}
+
+function handleFile(input) {
+    const file = input.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('rawCode').value = e.target.result;
+            updateCount();
+        };
+        reader.readAsText(file);
+    }
+}
+
+function createRaw() {
+    const code = document.getElementById('rawCode').value.trim();
+    if (!code) return alert('Please enter code.');
+
+    let id = generateSecureId(22);
+    while (database.scripts[id]) {
+        id = generateSecureId(22);
+    }
+
+    // บันทึกสคริปต์
+    database.scripts[id] = { code: code };
+    saveData();
+
+    // สร้างลิงก์ Raw
+    const rawLink = window.location.origin + window.location.pathname + '#/raw/' + id;
+    document.getElementById('loadstringBox').innerText = 'loadstring(game:HttpGet("' + rawLink + '"))()';
+    document.getElementById('resultArea').style.display = 'block';
+}
+
+function copyText() {
+    const text = document.getElementById('loadstringBox').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.innerText = 'Copied!';
+        setTimeout(() => { btn.innerText = '📋 Copy Loadstring'; }, 2000);
+    });
+}
+
+function goHome() {
+    window.location.hash = '';
+    document.getElementById('forbiddenView').style.display = 'none';
+    document.getElementById('mainView').style.display = 'block';
+}
 </script>
 
 </body>
-</html>
+                                                   </html>
+                
