@@ -1,101 +1,123 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOLARIS RUNNER - Script Vault</title>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>SOLARIS RUNNER</title>
     <style>
-        :root {
-            --bg-color: #0b0c10;
-            --card-bg: rgba(20, 22, 34, 0.9);
-            --accent-main: #ff5722;
-            --accent-glow: rgba(255, 87, 34, 0.35);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --text-main: #f1f5f9;
-            --text-sub: #64748b;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Kanit', sans-serif; }
-        
         body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
+            background-color: #0b0c10;
+            color: #ffffff;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 24px 12px;
+            padding: 20px;
         }
-
-        .main-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            width: 100%;
-            max-width: 480px;
-            padding: 28px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-        }
-
-        .brand-header { text-align: center; margin-bottom: 22px; }
-        .brand-title {
-            font-size: 24px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #ff5722, #ff8a65);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .brand-sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
-
-        .editor-wrapper {
-            background: rgba(10, 12, 20, 0.8);
-            border: 1px solid var(--border-color);
+        .container {
+            background-color: #1f2833;
+            border: 1px solid #45a29e;
             border-radius: 12px;
-            padding: 12px;
+            padding: 24px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        h1 {
+            color: #ff5722;
+            font-size: 24px;
+            letter-spacing: 1.5px;
+            margin-bottom: 4px;
+        }
+        p.subtitle {
+            color: #c5c6c7;
+            font-size: 13px;
+            margin-bottom: 20px;
         }
         textarea {
             width: 100%;
             height: 180px;
-            background: transparent;
-            border: none;
-            color: #cbd5e1;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12.5px;
+            background-color: #0b0c10;
+            color: #66fcf1;
+            border: 1px solid #45a29e;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 13px;
+            resize: none;
             outline: none;
-            resize: vertical;
+            margin-bottom: 16px;
         }
-
-        .btn-submit {
-            background: linear-gradient(135deg, #ff5722, #e64a19);
+        button {
+            width: 100%;
+            background-color: #ff5722;
             color: #ffffff;
             border: none;
-            border-radius: 12px;
-            padding: 11px 22px;
-            font-size: 13px;
-            font-weight: 600;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
             cursor: pointer;
-            width: 100%;
+            transition: 0.2s;
+        }
+        button:hover {
+            background-color: #e64a19;
+        }
+        .status-msg {
             margin-top: 14px;
-            box-shadow: 0 4px 18px var(--accent-glow);
+            font-size: 13px;
+            color: #66fcf1;
+            display: none;
         }
     </style>
 </head>
 <body>
 
-<div class="main-card">
-    <div class="brand-header">
-        <div class="brand-title">SOLARIS RUNNER</div>
-        <div class="brand-sub">Secure Executable Script Engine</div>
-    </div>
+<div class="container">
+    <h1>SOLARIS RUNNER</h1>
+    <p class="subtitle">Secure Executable Script Engine</p>
+    
+    <textarea id="scriptInput" placeholder="วางสคริปต์ Lua ของคุณที่นี่..."></textarea>
+    
+    <button id="convertBtn" onclick="processScript()">⚡ Convert Script</button>
 
-    <div class="editor-wrapper">
-        <textarea id="rawCode" placeholder="-- Paste your Lua script here..."></textarea>
-    </div>
-
-    <button class="btn-submit" onclick="alert('ระบบหน้าเว็บ SOLARIS RUNNER บน Netlify พร้อมใช้งานแล้ว!')">⚡ Convert Script</button>
+    <div id="statusMsg" class="status-msg"></div>
 </div>
 
+<script>
+    function processScript() {
+        const input = document.getElementById('scriptInput').value.trim();
+        const status = document.getElementById('statusMsg');
+
+        if (!input) {
+            status.style.color = '#ff4d4d';
+            status.innerText = '⚠️ กรุณาวางสคริปต์ก่อนทำการแปลง!';
+            status.style.display = 'block';
+            return;
+        }
+
+        // ตัวอย่างการครอบสคริปต์เพื่อนำไปใช้งาน
+        const converted = `-- SOLARIS RUNNER EXECUTOR LOAD\nloadstring([[${input}]])()`;
+        
+        // คัดลอกผลลัพธ์ลง Clipboard
+        navigator.clipboard.writeText(converted).then(() => {
+            status.style.color = '#66fcf1';
+            status.innerText = '✅ แปลงสคริปต์และคัดลอกลง Clipboard เรียบร้อยแล้ว!';
+            status.style.display = 'block';
+        }).catch(() => {
+            status.style.color = '#66fcf1';
+            status.innerText = '✅ แปลงสคริปต์สำเร็จ!';
+            status.style.display = 'block';
+        });
+    }
+</script>
+
 </body>
-  </html>
-  
+</html>
