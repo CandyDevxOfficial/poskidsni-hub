@@ -3,127 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOLARIS RUNNER - Script Vault</title>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>SOLARIS RUNNER - Premium Script Vault</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-color: #0b0c10;
-            --card-bg: rgba(20, 22, 34, 0.9);
-            --accent-main: #ff5722;
-            --accent-glow: rgba(255, 87, 34, 0.35);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --text-main: #f1f5f9;
-            --text-sub: #64748b;
-            --green-code: #22c55e;
+            --bg-color: #050608;
+            --card-bg: rgba(15, 17, 26, 0.75);
+            --accent-orange: #ff5722;
+            --accent-glow: rgba(255, 87, 34, 0.4);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --green-code: #10b981;
+            --purple-neon: #8b5cf6;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Kanit', sans-serif; }
         
         body {
             background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(255, 87, 34, 0.1) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 40%);
             color: var(--text-main);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             padding: 24px 12px;
+            overflow-x: hidden;
+            position: relative;
         }
 
+        /* Ambient Animated Background Glows */
+        .bg-glow-1 {
+            position: fixed; top: -10%; left: -10%; width: 50vw; height: 50vw;
+            background: radial-gradient(circle, rgba(255, 87, 34, 0.15) 0%, transparent 70%);
+            filter: blur(80px); z-index: -1; animation: float 10s infinite alternate;
+        }
+        .bg-glow-2 {
+            position: fixed; bottom: -10%; right: -10%; width: 50vw; height: 50vw;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+            filter: blur(80px); z-index: -1; animation: float 12s infinite alternate-reverse;
+        }
+        @keyframes float { 0% { transform: translate(0, 0); } 100% { transform: translate(30px, 40px); } }
+
         /* 403 Forbidden View */
-        #forbiddenView {
-            display: none;
-            text-align: center;
-        }
+        #forbiddenView { display: none; text-align: center; }
         .card-403 {
-            background: rgba(20, 22, 34, 0.9);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 87, 34, 0.3);
             padding: 40px 28px;
-            border-radius: 20px;
+            border-radius: 24px;
             max-width: 440px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 0 50px rgba(255, 87, 34, 0.2);
         }
-        .code-403 { font-size: 72px; font-weight: 700; color: #ff5722; font-family: 'JetBrains Mono', monospace; }
-        .title-403 { font-size: 20px; margin-bottom: 12px; }
-        .desc-403 { font-size: 13px; color: #94a3b8; margin-bottom: 28px; }
-        .btn-403 { background: #ff5722; color: #fff; padding: 12px 28px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 13px; cursor: pointer; border: none; }
+        .code-403 { font-size: 80px; font-weight: 700; color: var(--accent-orange); font-family: 'JetBrains Mono', monospace; text-shadow: 0 0 20px var(--accent-glow); }
+        .title-403 { font-size: 22px; margin-bottom: 8px; font-weight: 600; }
+        .desc-403 { font-size: 13.5px; color: var(--text-sub); margin-bottom: 28px; }
+        .btn-403 { background: linear-gradient(135deg, #ff5722, #e64a19); color: #fff; padding: 12px 28px; border-radius: 12px; font-weight: 600; font-size: 13px; cursor: pointer; border: none; box-shadow: 0 4px 15px var(--accent-glow); }
 
         /* Main App View */
         .main-card {
             background: var(--card-bg);
-            backdrop-filter: blur(16px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--border-color);
-            border-radius: 20px;
+            border-radius: 24px;
             width: 100%;
-            max-width: 480px;
-            padding: 28px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            max-width: 490px;
+            padding: 30px 26px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
         }
 
-        .brand-header { text-align: center; margin-bottom: 22px; }
+        /* Top Status Bar */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            padding: 6px 14px;
+            margin-bottom: 24px;
+            font-size: 11px;
+            color: var(--text-sub);
+        }
+        .status-dot { width: 7px; height: 7px; background: var(--green-code); border-radius: 50%; display: inline-block; margin-right: 6px; box-shadow: 0 0 8px var(--green-code); }
+
+        .brand-header { text-align: center; margin-bottom: 26px; }
+        .brand-logo-icon {
+            width: 44px; height: 44px; background: linear-gradient(135deg, rgba(255,87,34,0.2), rgba(139,92,246,0.2));
+            border: 1px solid rgba(255,87,34,0.4); border-radius: 14px; display: flex;
+            align-items: center; justify-content: center; margin: 0 auto 12px auto;
+            color: var(--accent-orange); font-size: 20px; box-shadow: 0 0 20px rgba(255,87,34,0.2);
+        }
         .brand-title {
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 700;
-            background: linear-gradient(135deg, #ff5722, #ff8a65);
+            letter-spacing: 1px;
+            background: linear-gradient(135deg, #ffffff 30%, #ff8a65 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .brand-sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+        .brand-sub { font-size: 12px; color: var(--text-sub); margin-top: 3px; }
 
         .form-group { margin-bottom: 18px; }
         .label-title {
             font-size: 11px;
             font-weight: 600;
-            color: #94a3b8;
+            color: #cbd5e1;
             letter-spacing: 1px;
             text-transform: uppercase;
-            margin-bottom: 8px;
-            display: block;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .editor-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
-        .btn-mini-group { display: flex; gap: 6px; }
+        .btn-mini-group { display: flex; gap: 8px; }
         .btn-mini {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border-color);
             color: #cbd5e1;
-            padding: 5px 10px;
-            border-radius: 8px;
-            font-size: 11px;
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 11.5px;
             cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
+        .btn-mini:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
 
         .editor-wrapper {
-            background: rgba(10, 12, 20, 0.8);
+            background: rgba(7, 9, 15, 0.9);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 12px;
+            border-radius: 16px;
+            padding: 14px;
+            transition: all 0.3s;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        .editor-wrapper:focus-within {
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 15px var(--accent-glow), inset 0 2px 4px rgba(0, 0, 0, 0.5);
         }
         textarea {
             width: 100%;
-            height: 180px;
+            height: 190px;
             background: transparent;
             border: none;
-            color: #cbd5e1;
+            color: #00ffcc;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 12.5px;
+            font-size: 13px;
             outline: none;
             resize: vertical;
-            line-height: 1.5;
+            line-height: 1.6;
         }
 
         .editor-bottom {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 14px;
+            margin-top: 16px;
         }
         .char-counter { font-size: 12px; color: var(--text-sub); font-family: 'JetBrains Mono', monospace; }
 
@@ -132,46 +180,57 @@
             color: #ffffff;
             border: none;
             border-radius: 12px;
-            padding: 11px 22px;
-            font-size: 13px;
+            padding: 12px 24px;
+            font-size: 13.5px;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 4px 18px var(--accent-glow);
-            transition: all 0.25s;
+            box-shadow: 0 4px 20px var(--accent-glow);
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(255, 87, 34, 0.6); }
 
         .result-box {
             display: none;
             margin-top: 24px;
-            padding-top: 20px;
-            border-top: 1px dashed rgba(255, 255, 255, 0.12);
+            padding-top: 22px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.15);
+            animation: fadeIn 0.4s ease;
         }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .status-badge {
             color: var(--green-code);
             font-size: 12px;
             font-weight: 600;
             margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 185, 129, 0.1);
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
         }
 
         .raw-input-group {
             display: flex;
             gap: 8px;
             margin-bottom: 18px;
+            margin-top: 8px;
         }
         .raw-input-box {
             flex: 1;
-            background: rgba(10, 12, 20, 0.8);
+            background: rgba(7, 9, 15, 0.9);
             border: 1px solid var(--border-color);
             border-radius: 10px;
             padding: 10px 12px;
-            color: #cbd5e1;
+            color: #94a3b8;
             font-family: 'JetBrains Mono', monospace;
             font-size: 12px;
             outline: none;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
         .btn-copy-sm {
             background: rgba(255, 255, 255, 0.08);
@@ -182,18 +241,22 @@
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
+            transition: 0.2s;
         }
+        .btn-copy-sm:hover { background: rgba(255, 255, 255, 0.15); }
 
         .code-display {
-            background: rgba(8, 9, 15, 0.9);
-            border: 1px solid rgba(34, 197, 94, 0.2);
-            border-radius: 10px;
-            padding: 12px;
+            background: rgba(7, 9, 15, 0.95);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            padding: 14px;
             color: var(--green-code);
             font-family: 'JetBrains Mono', monospace;
-            font-size: 11.5px;
+            font-size: 12px;
             word-break: break-all;
-            margin-bottom: 12px;
+            margin-top: 8px;
+            margin-bottom: 14px;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.08);
         }
 
         .btn-copy-main {
@@ -201,39 +264,46 @@
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid var(--border-color);
             color: var(--text-main);
-            padding: 11px;
-            border-radius: 10px;
+            padding: 12px;
+            border-radius: 12px;
             font-weight: 600;
-            font-size: 12.5px;
+            font-size: 13px;
             cursor: pointer;
-            margin-bottom: 20px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
-
-        .info-footer {
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            padding-top: 14px;
-            font-size: 11.5px;
-            color: #64748b;
-            line-height: 1.6;
-        }
-        .info-footer strong { color: #94a3b8; }
+        .btn-copy-main:hover { background: rgba(255, 255, 255, 0.12); }
     </style>
 </head>
 <body>
 
+<div class="bg-glow-1"></div>
+<div class="bg-glow-2"></div>
+
 <!-- หน้าหลัก UI -->
 <div class="main-card" id="mainView">
+    
+    <!-- Status Bar ด้านบน -->
+    <div class="status-bar">
+        <div><span class="status-dot"></span> System Engine Online</div>
+        <div><i class="fa-solid fa-shield-halved" style="color: #8b5cf6;"></i> Anti-Browser Active</div>
+    </div>
+
     <div class="brand-header">
+        <div class="brand-logo-icon"><i class="fa-solid fa-bolt"></i></div>
         <div class="brand-title">SOLARIS RUNNER</div>
-        <div class="brand-sub">Secure Executable Script Engine</div>
+        <div class="brand-sub">Next-Gen Executable Script Engine</div>
     </div>
 
     <div class="form-group">
         <div class="editor-top">
-            <span class="label-title" style="margin:0;">CODE (LUA / TEXT)</span>
+            <span class="label-title"><i class="fa-solid fa-code" style="color:#ff5722;"></i> Code (Lua / Text)</span>
             <div class="btn-mini-group">
-                <button class="btn-mini" onclick="document.getElementById('fileInput').click()">📁 Upload File</button>
-                <button class="btn-mini" onclick="document.getElementById('rawCode').value=''; updateCount();">🧹 Clear</button>
+                <button class="btn-mini" onclick="document.getElementById('fileInput').click()"><i class="fa-solid fa-folder-open"></i> Upload</button>
+                <button class="btn-mini" onclick="document.getElementById('rawCode').value=''; updateCount();"><i class="fa-solid fa-broom"></i> Clear</button>
             </div>
         </div>
 
@@ -245,27 +315,25 @@
 
         <div class="editor-bottom">
             <span class="char-counter" id="charCount">0 characters</span>
-            <button class="btn-submit" onclick="createRaw()">⚡ Convert Script</button>
+            <button class="btn-submit" onclick="createRaw()"><i class="fa-solid fa-bolt"></i> Convert Script</button>
         </div>
     </div>
 
+    <!-- ผลลัพธ์หลังกดแปลง -->
     <div class="result-box" id="resultArea">
-        <div class="status-badge">✔ Raw ready — Browsers will receive 403</div>
+        <div class="status-badge">
+            <i class="fa-solid fa-circle-check"></i> Raw URL Ready — Browser Protection Enabled (403)
+        </div>
 
-        <span class="label-title">RAW URL</span>
+        <span class="label-title"><i class="fa-solid fa-link"></i> Raw URL</span>
         <div class="raw-input-group">
             <input type="text" class="raw-input-box" id="rawUrlBox" readonly>
             <button class="btn-copy-sm" id="copyRawBtn" onclick="copyRawUrl()">Copy</button>
         </div>
 
-        <span class="label-title">LOADSTRING (ROBLOX)</span>
+        <span class="label-title"><i class="fa-solid fa-terminal"></i> Loadstring (Roblox Executor)</span>
         <div class="code-display" id="loadstringBox"></div>
-        <button class="btn-copy-main" id="copyBtn" onclick="copyLoadstring()">📋 Copy Loadstring</button>
-
-        <div class="info-footer">
-            <strong>How the block works:</strong> Security Layer checks request origin.<br>
-            Modern web browsers trigger 403 Forbidden protection while HTTP Client Execution bypasses safely.
-        </div>
+        <button class="btn-copy-main" id="copyBtn" onclick="copyLoadstring()"><i class="fa-regular fa-copy"></i> Copy Loadstring</button>
     </div>
 </div>
 
@@ -274,8 +342,8 @@
     <div class="card-403">
         <div class="code-403">403</div>
         <div class="title-403">Access Denied</div>
-        <div class="desc-403">Direct web browser access is blocked to protect script integrity.</div>
-        <button onclick="goHome()" class="btn-403">Return to Home</button>
+        <div class="desc-403">Direct Web Browser access is blocked to protect script integrity. Executable only.</div>
+        <button onclick="goHome()" class="btn-403"><i class="fa-solid fa-house"></i> Return to Home</button>
     </div>
 </div>
 
@@ -286,7 +354,6 @@ function saveData() {
     localStorage.setItem('solaris_db', JSON.stringify(database));
 }
 
-// สร้าง ID สุ่ม 22 หลัก
 function generateSecureId(length = 22) {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
@@ -296,14 +363,8 @@ function generateSecureId(length = 22) {
     return result;
 }
 
-// ตรวจจับเส้นทาง #/raw/:id เพื่อจำลองการบล็อก Browser
-window.onload = function() {
-    checkRoute();
-};
-
-window.onhashchange = function() {
-    checkRoute();
-};
+window.onload = function() { checkRoute(); };
+window.onhashchange = function() { checkRoute(); };
 
 function checkRoute() {
     const hash = window.location.hash;
@@ -370,8 +431,8 @@ function copyLoadstring() {
     const text = document.getElementById('loadstringBox').innerText;
     navigator.clipboard.writeText(text).then(() => {
         const btn = document.getElementById('copyBtn');
-        btn.innerText = 'Copied!';
-        setTimeout(() => { btn.innerText = '📋 Copy Loadstring'; }, 2000);
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+        setTimeout(() => { btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy Loadstring'; }, 2000);
     });
 }
 
@@ -383,5 +444,7 @@ function goHome() {
 </script>
 
 </body>
+                 </html>
+            
                                                          </html>
     
