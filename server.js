@@ -2,13 +2,9 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const https = require('https');
 const app = express();
 
 app.use(express.json());
-
-// 🛡️ ดึง Webhook URL จาก Environment Variable (ลบ URL ตรงๆ ออกแล้ว)
-const DISCORD_STATUS_WEBHOOK = process.env.DISCORD_WEBHOOK_URL;
 
 const DATA_DIR = fs.existsSync('/data') ? '/data' : path.join(__dirname, 'data_store');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -37,50 +33,6 @@ function generateSecureId(length = 22) {
         result += chars[bytes[i] % chars.length];
     }
     return result;
-}
-
-function postWebhook(webhookUrl, payload) {
-    if (!webhookUrl) {
-        console.log("⚠️ ไม่พบ DISCORD_WEBHOOK_URL ใน Environment Variables");
-        return;
-    }
-    try {
-        const url = new URL(webhookUrl);
-        const req = https.request(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(payload)
-            }
-        });
-        req.on('error', (err) => console.error("Webhook error:", err));
-        req.write(payload);
-        req.end();
-    } catch (err) {
-        console.error("Failed to send webhook:", err);
-    }
-}
-
-function sendDiscordStatus() {
-    const timeUnix = Math.floor(Date.now() / 1000);
-    const payload = JSON.stringify({
-        username: "SOLARIS SYSTEM MONITOR",
-        avatar_url: "https://i.imgur.com/8N4T8I3.png",
-        embeds: [{
-            title: "🟢 SYSTEM STATUS : ONLINE",
-            description: "All core systems and script vault services are running smoothly.",
-            color: 2278750,
-            fields: [
-                { name: "🌐 Web Server", value: "`Operational` (Render)", inline: true },
-                { name: "⚡ Script Vault", value: "`Online`", inline: true },
-                { name: "🛡️ Anti-Browser Security", value: "`Active` (403 Protection)", inline: true },
-                { name: "🔄 Last Started", value: `<t:${timeUnix}:R>`, inline: true }
-            ],
-            footer: { text: "SOLARIS HUB • Automated System Monitor" },
-            timestamp: new Date().toISOString()
-        }]
-    });
-    postWebhook(DISCORD_STATUS_WEBHOOK, payload);
 }
 
 // Main Page HTML
@@ -468,6 +420,4 @@ app.get('/raw/:id', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log('SOLARIS RUNNER server active on port ' + PORT);
-    sendDiscordStatus();
 });
-        
