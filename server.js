@@ -7,8 +7,8 @@ const app = express();
 
 app.use(express.json());
 
-// Discord Webhooks
-const DISCORD_STATUS_WEBHOOK = "https://discord.com/api/webhooks/1541093112695496744/Fgd7iGWH9LPpkKKIUpw_-qVTBic8WSvhYl07mddNGXzA0p5xw0z_DNA0CzAE65OX45W_";
+// 🛡️ ดึง Webhook URL จาก Environment Variable (ลบ URL ตรงๆ ออกแล้ว)
+const DISCORD_STATUS_WEBHOOK = process.env.DISCORD_WEBHOOK_URL;
 
 const DATA_DIR = fs.existsSync('/data') ? '/data' : path.join(__dirname, 'data_store');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -40,6 +40,10 @@ function generateSecureId(length = 22) {
 }
 
 function postWebhook(webhookUrl, payload) {
+    if (!webhookUrl) {
+        console.log("⚠️ ไม่พบ DISCORD_WEBHOOK_URL ใน Environment Variables");
+        return;
+    }
     try {
         const url = new URL(webhookUrl);
         const req = https.request(url, {
@@ -466,4 +470,4 @@ app.listen(PORT, () => {
     console.log('SOLARIS RUNNER server active on port ' + PORT);
     sendDiscordStatus();
 });
-                
+        
